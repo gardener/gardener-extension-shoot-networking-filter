@@ -17,7 +17,17 @@ import (
 type Configuration struct {
 	metav1.TypeMeta `json:",inline"`
 
+	// EgressFilter contains the configuration for the egress filter
+	// +optional
+	EgressFilter *EgressFilter `json:"egressFilter,omitempty"`
+
 	// HealthCheckConfig is the config for the health check controller.
 	// +optional
 	HealthCheckConfig *healthcheckconfigv1alpha1.HealthCheckConfig `json:"healthCheckConfig,omitempty"`
+}
+
+// EgressFilter contains the configuration for the egress filter.
+type EgressFilter struct {
+	// BlackholingEnabled is a flag to set blackholing or firewall approach.
+	BlackholingEnabled bool `json:"blackholingEnabled"`
 }

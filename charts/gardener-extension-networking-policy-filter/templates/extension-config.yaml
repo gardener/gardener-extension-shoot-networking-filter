@@ -12,3 +12,7 @@ data:
   config.yaml: |
     apiVersion: networking-policy-filter.extensions.config.gardener.cloud/v1alpha1
     kind: Configuration
+{{- if .Values.egressFilter }}
+    egressFilter:
+      blackholingEnabled: {{ .Values.egressFilter.blackholingEnabled }}
+{{- end}}

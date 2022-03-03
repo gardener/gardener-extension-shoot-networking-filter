@@ -16,6 +16,15 @@ import (
 type Configuration struct {
 	metav1.TypeMeta
 
+	// EgressFilter contains the configuration for the egress filter
+	EgressFilter *EgressFilter
+
 	// HealthCheckConfig is the config for the health check controller.
 	HealthCheckConfig *healthcheckconfig.HealthCheckConfig
+}
+
+// EgressFilter contains the configuration for the egress filter.
+type EgressFilter struct {
+	// BlackholingEnabled is a flag to set blackholing or firewall approach.
+	BlackholingEnabled bool
 }

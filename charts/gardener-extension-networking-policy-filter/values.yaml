@@ -39,3 +39,6 @@ vpa:
 
 gardener:
   version: ""
+
+egressFilter:
+  blackholingEnabled: true
