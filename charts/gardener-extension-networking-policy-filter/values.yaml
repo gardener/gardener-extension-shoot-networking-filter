@@ -42,3 +42,4 @@ gardener:
 
 egressFilter:
   blackholingEnabled: true
+  filterSetProviderType: static
