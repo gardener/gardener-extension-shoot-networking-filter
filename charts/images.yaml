@@ -4,7 +4,11 @@
 
 ---
 images:
-- name: oidc-webhook-authenticator
-  sourceRepository: github.com/gardener/oidc-webhook-authenticator
-  repository: eu.gcr.io/gardener-project/gardener/oidc-webhook-authenticator
-  tag: "v0.6.0"
+- name: egress-filter-firewaller
+  sourceRepository: https://github.com/gardener/egress-filter-refresher
+  repository: eu.gcr.io/gardener-project/gardener/egress-filter-firewaller
+  tag: "0.3.0"
+- name: egress-filter-blackholer
+  sourceRepository: https://github.com/gardener/egress-filter-refresher
+  repository: eu.gcr.io/gardener-project/gardener/egress-filter-blackholer
+  tag: "0.3.0"
