@@ -5,10 +5,10 @@
 ---
 images:
 - name: egress-filter-firewaller
-  sourceRepository: https://github.com/gardener/egress-filter-refresher
+  sourceRepository: github.com/gardener/egress-filter-refresher
   repository: eu.gcr.io/gardener-project/gardener/egress-filter-firewaller
   tag: "0.3.0"
 - name: egress-filter-blackholer
-  sourceRepository: https://github.com/gardener/egress-filter-refresher
+  sourceRepository: github.com/gardener/egress-filter-refresher
   repository: eu.gcr.io/gardener-project/gardener/egress-filter-blackholer
   tag: "0.3.0"
