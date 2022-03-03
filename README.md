@@ -1,36 +1,59 @@
-# <repo name>
+# [Gardener Extension for openid connect services](https://gardener.cloud)
 
 [![reuse compliant](https://reuse.software/badge/reuse-compliant.svg)](https://reuse.software/)
 
-## How to use this repository template
+Project Gardener implements the automated management and operation of [Kubernetes](https://kubernetes.io/) clusters as a service.
+Its main principle is to leverage Kubernetes concepts for all of its tasks.
 
-This template repository can be used to seed new git repositories in the gardener github organisation.
+Recently, most of the vendor specific logic has been developed [in-tree](https://github.com/gardener/gardener).
+However, the project has grown to a size where it is very hard to extend, maintain, and test.
+With [GEP-1](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md) we have proposed how the architecture can be changed in a way to support external controllers that contain their very own vendor specifics.
+This way, we can keep Gardener core clean and independent.
 
-- you need to be a [member of the gardener organisation](https://github.com/orgs/gardener/people)
-  in order to be able to create a new private repository
-- [create the new repository](https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template)
-  based on this template repository
-- in the files
-  - `.reuse/dep5`
-  - `CODEOWNERS`
-  - `README.md`
-- replace the following placeholders
-  - `<repo name>`: name of the new repository
-  - `<maintainer team>`: name of the github team in [gardener teams](https://github.com/orgs/gardener/teams)
-    defining maintainers of the new repository.
-    If several repositories share a common topic and the same
-    set of maintainers they can share a common maintainer team
-- set the repository description in the "About" section of your repository
-- describe the new component in additional sections in this `README.md`
-- any contributions to the new repository must follow the rules in the 
-  [contributor guide](https://github.com/gardener/documentation/blob/master/CONTRIBUTING.md)
-- remove this section from this `README.md`
-- ask [@msohn](https://github.com/orgs/gardener/people/msohn) or another
-  [owner of the gardener github organisation](https://github.com/orgs/gardener/people?query=role%3Aowner)
-  - to double-check the initial content of this repository
-  - to create the maintainer team for this new repository
-  - to make this repository public
-  - protect at least the master branch requiring mandatory code review by the maintainers defined in CODEOWNERS
-  - grant admin permission to the maintainers team of the new repository defined in CODEOWNERS
+This controller implements Gardener's extension contract for the `networking-policy-filter` extension.
 
-## UNDER CONSTRUCTION
+An example for a `ControllerRegistration` resource that can be used to register this controller to Gardener can be found [here](example/controller-registration.yaml).
+
+Please find more information regarding the extensibility concepts and a detailed proposal [here](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md).
+
+** TODO **
+
+## Extension Resources
+
+Example extension resource:
+
+```yaml
+apiVersion: extensions.gardener.cloud/v1alpha1
+kind: Extension
+metadata:
+  name: extension-shoot-oidc-service
+  namespace: shoot--project--abc
+spec:
+  type: shoot-oidc-service
+```
+
+When an extension resource is reconciled, the extension controller will create an instance of [OIDC Webhook Authenticator](https://github.com/gardener/oidc-webhook-authenticator). These resources are placed inside the shoot namespace on the seed. Also, the controller takes care about generating necessary `RBAC` resources for the seed as well as for the shoot.
+
+Please note, this extension controller relies on the [Gardener-Resource-Manager](https://github.com/gardener/gardener/blob/master/docs/concepts/resource-manager.md) to deploy k8s resources to seed and shoot clusters.
+
+## How to start using or developing this extension controller locally
+
+You can run the controller locally on your machine by executing `make start`.
+
+We are using Go modules for Golang package dependency management and [Ginkgo](https://github.com/onsi/ginkgo)/[Gomega](https://github.com/onsi/gomega) for testing.
+
+## Feedback and Support
+
+Feedback and contributions are always welcome. Please report bugs or suggestions as [GitHub issues](https://github.com/gardener/gardener-extension-shoot-oidc-service/issues) or join our [Slack channel #gardener](https://kubernetes.slack.com/messages/gardener) (please invite yourself to the Kubernetes workspace [here](http://slack.k8s.io)).
+
+## Learn more!
+
+Please find further resources about out project here:
+
+* [Our landing page gardener.cloud](https://gardener.cloud/)
+* ["Gardener, the Kubernetes Botanist" blog on kubernetes.io](https://kubernetes.io/blog/2018/05/17/gardener/)
+* ["Gardener Project Update" blog on kubernetes.io](https://kubernetes.io/blog/2019/12/02/gardener-project-update/)
+* [GEP-1 (Gardener Enhancement Proposal) on extensibility](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md)
+* [Extensibility API documentation](https://github.com/gardener/gardener/tree/master/docs/extensions)
+* [Gardener Extensions Golang library](https://godoc.org/github.com/gardener/gardener/extensions/pkg)
+* [Gardener API Reference](https://gardener.cloud/api-reference/)
