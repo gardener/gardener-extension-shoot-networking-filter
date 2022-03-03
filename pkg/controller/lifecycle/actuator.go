@@ -12,16 +12,12 @@ import (
 	"github.com/gardener/gardener-extension-networking-policy-filter/pkg/apis/config"
 	"github.com/gardener/gardener-extension-networking-policy-filter/pkg/constants"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
-	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	managedresources "github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
-	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -63,19 +59,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		return err
 	}
 
-	if err := managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, false, shootResources); err != nil {
-		return err
-	}
-
-	// patch deployment for kube-apiserver in order to trigger webhook
-	depl := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      v1beta1constants.DeploymentNameKubeAPIServer,
-		},
-	}
-
-	return a.client.Patch(ctx, depl, client.RawPatch(types.StrategicMergePatchType, []byte("{}")))
+	return managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, false, shootResources)
 }
 
 // Delete the Extension resource.
