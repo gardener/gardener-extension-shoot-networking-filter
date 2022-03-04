@@ -2,5 +2,5 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-apiVersion: networking-policy-filter.extensions.config.gardener.cloud/v1alpha1
+apiVersion: shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1
 kind: Configuration

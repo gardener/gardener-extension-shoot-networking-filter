@@ -1,4 +1,4 @@
-module github.com/gardener/gardener-extension-networking-policy-filter
+module github.com/gardener/gardener-extension-shoot-networking-filter
 
 go 1.16
 

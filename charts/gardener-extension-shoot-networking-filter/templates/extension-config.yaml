@@ -6,11 +6,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: extension-networking-policy-filter.config
+  name: extension-shoot-networking-filter.config
   namespace: {{ .Release.Namespace }}	
 data:
   config.yaml: |
-    apiVersion: networking-policy-filter.extensions.config.gardener.cloud/v1alpha1
+    apiVersion: shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1
     kind: Configuration
 {{- if .Values.egressFilter }}
     egressFilter:

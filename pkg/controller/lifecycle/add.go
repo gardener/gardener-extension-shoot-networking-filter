@@ -7,8 +7,8 @@ package lifecycle
 import (
 	"time"
 
-	"github.com/gardener/gardener-extension-networking-policy-filter/pkg/constants"
-	controllerconfig "github.com/gardener/gardener-extension-networking-policy-filter/pkg/controller/config"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
+	controllerconfig "github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/config"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -19,7 +19,7 @@ const (
 	// Type is the type of Extension resource.
 	Type = constants.ExtensionType
 	// Name is the name of the lifecycle controller.
-	Name = "networking_policy_filter_lifecycle_controller"
+	Name = "shoot_networking_filter_lifecycle_controller"
 	// FinalizerSuffix is the finalizer suffix for the Networking Policy Filter controller.
 	FinalizerSuffix = constants.ExtensionType
 )

@@ -8,8 +8,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/gardener-extension-networking-policy-filter/pkg/controller/healthcheck"
-	"github.com/gardener/gardener-extension-networking-policy-filter/pkg/controller/lifecycle"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/healthcheck"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/lifecycle"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/util"
 
@@ -26,7 +26,7 @@ func NewServiceControllerCommand() *cobra.Command {
 	options := NewOptions()
 
 	cmd := &cobra.Command{
-		Use:           "gardener-extension-networking-policy-filter",
+		Use:           "gardener-extension-shoot-networking-filter",
 		Short:         "Networking policy filter controller manages components which provide policy filter like egress filter.",
 		SilenceErrors: true,
 

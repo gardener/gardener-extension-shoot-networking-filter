@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-gardener-extension-networking-policy-filter:
+gardener-extension-shoot-networking-filter:
   template: 'default'
   base_definition:
     repo: ~
@@ -11,11 +11,11 @@ gardener-extension-networking-policy-filter:
         preprocess: 'inject-commit-hash'
       publish:
         dockerimages:
-          gardener-extension-networking-policy-filter:
+          gardener-extension-shoot-networking-filter:
             registry: 'gcr-readwrite'
-            image: 'eu.gcr.io/gardener-project/gardener/extensions/networking-policy-filter'
+            image: 'eu.gcr.io/gardener-project/gardener/extensions/shoot-networking-filter'
             dockerfile: 'Dockerfile'
-            target: gardener-extension-networking-policy-filter
+            target: gardener-extension-shoot-networking-filter
   jobs:
     head-update:
       traits:
@@ -46,5 +46,5 @@ gardener-extension-networking-policy-filter:
         component_descriptor: ~
         publish:
           dockerimages:
-            gardener-extension-networking-policy-filter:
+            gardener-extension-shoot-networking-filter:
               tag_as_latest: true

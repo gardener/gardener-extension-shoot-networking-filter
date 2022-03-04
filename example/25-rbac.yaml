@@ -6,9 +6,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: gardener-extension-networking-policy-filter
+  name: gardener-extension-shoot-networking-filter
   labels:
-    app.kubernetes.io/name: gardener-extension-networking-policy-filter
+    app.kubernetes.io/name: gardener-extension-shoot-networking-filter
 rules:
 - apiGroups:
   - apps
@@ -100,7 +100,7 @@ rules:
   resources:
   - leases
   resourceNames:
-  - extension-networking-policy-filter-leader-election
+  - extension-shoot-networking-filter-leader-election
   verbs:
   - update
   - get

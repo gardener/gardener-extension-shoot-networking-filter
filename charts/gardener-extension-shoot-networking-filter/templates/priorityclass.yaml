@@ -12,4 +12,4 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
 value: 1000000000
 globalDefault: false
-description: "Priority class for the Gardener extension: networking-policy-filter."
+description: "Priority class for the Gardener extension: shoot-networking-filter."

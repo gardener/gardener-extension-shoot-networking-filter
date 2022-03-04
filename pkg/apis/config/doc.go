@@ -3,6 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // +k8s:deepcopy-gen=package
-// +groupName=networking-policy-filter.extensions.config.gardener.cloud
+// +groupName=shoot-networking-filter.extensions.config.gardener.cloud
 
 package config

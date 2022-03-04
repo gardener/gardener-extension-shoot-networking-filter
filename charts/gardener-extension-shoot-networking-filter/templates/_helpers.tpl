@@ -7,5 +7,5 @@
 {{- end }}
 
 {{- define "leaderelectionid" -}}
-extension-networking-policy-filter-leader-election
+extension-shoot-networking-filter-leader-election
 {{- end -}}

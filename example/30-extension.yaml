@@ -5,7 +5,7 @@
 apiVersion: extensions.gardener.cloud/v1alpha1
 kind: Extension
 metadata:
-  name: networking-policy-filter
+  name: shoot-networking-filter
   namespace: shoot--foo--bar
 spec:
-  type: networking-policy-filter
+  type: shoot-networking-filter

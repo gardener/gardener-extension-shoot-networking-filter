@@ -32,4 +32,4 @@ curl https://raw.githubusercontent.com/gardener/documentation/${docCommitHash}/.
 scriptPath="${tmpDir}/check-manifest-script.sh"
 configPath="${tmpDir}/manifest-config"
 
-${scriptPath} --repo-path ${repoPath} --repo-name "gardener-extension-networking-policy-filter" --use-token false --manifest-path ${manifestPath} --diff-dirs ${diffDirs} --config-path ${configPath}
+${scriptPath} --repo-path ${repoPath} --repo-name "gardener-extension-shoot-networking-filter" --use-token false --manifest-path ${manifestPath} --diff-dirs ${diffDirs} --config-path ${configPath}

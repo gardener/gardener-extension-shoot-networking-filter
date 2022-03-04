@@ -7,7 +7,7 @@ package imagevector
 import (
 	"strings"
 
-	"github.com/gardener/gardener-extension-networking-policy-filter/charts"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/charts"
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 	"k8s.io/apimachinery/pkg/util/runtime"
 )

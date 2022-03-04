@@ -4,7 +4,7 @@
 
 kind: TestDefinition
 metadata:
-  name: networking-policy-filter-lifecycle
+  name: shoot-networking-filter-lifecycle
 spec:
   owner: gardener-oq@listserv.sap.com
   description: Tests the lifecycle of the networking policy filter extension.

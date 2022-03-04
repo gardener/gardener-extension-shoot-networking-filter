@@ -10,7 +10,7 @@ However, the project has grown to a size where it is very hard to extend, mainta
 With [GEP-1](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md) we have proposed how the architecture can be changed in a way to support external controllers that contain their very own vendor specifics.
 This way, we can keep Gardener core clean and independent.
 
-This controller implements Gardener's extension contract for the `networking-policy-filter` extension.
+This controller implements Gardener's extension contract for the `shoot-networking-filter` extension.
 
 An example for a `ControllerRegistration` resource that can be used to register this controller to Gardener can be found [here](example/controller-registration.yaml).
 
@@ -26,10 +26,9 @@ Example extension resource:
 apiVersion: extensions.gardener.cloud/v1alpha1
 kind: Extension
 metadata:
-  name: extension-shoot-oidc-service
+  name: extension-shoot-networking-filter
   namespace: shoot--project--abc
 spec:
-  type: shoot-oidc-service
 ```
 
 When an extension resource is reconciled, the extension controller will create an instance of [OIDC Webhook Authenticator](https://github.com/gardener/oidc-webhook-authenticator). These resources are placed inside the shoot namespace on the seed. Also, the controller takes care about generating necessary `RBAC` resources for the seed as well as for the shoot.

@@ -4,4 +4,4 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-./vendor/github.com/gardener/gardener/hack/hook-me.sh gardener-extension-networking-policy-filter $@
+./vendor/github.com/gardener/gardener/hack/hook-me.sh gardener-extension-shoot-networking-filter $@

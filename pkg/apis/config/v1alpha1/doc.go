@@ -3,12 +3,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // +k8s:deepcopy-gen=package
-// +k8s:conversion-gen=github.com/gardener/gardener-extension-networking-policy-filter/pkg/apis/config
+// +k8s:conversion-gen=github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config
 // +k8s:defaulter-gen=TypeMeta
 // +k8s:openapi-gen=true
 
 //go:generate gen-crd-api-reference-docs -api-dir . -config ../../../../hack/api-reference/config.json -template-dir ../../../../vendor/github.com/gardener/gardener/hack/api-reference/template -out-file ../../../../hack/api-reference/config.md
 
 // Package v1alpha1 contains the OIDC Shoot Service extension configuration.
-// +groupName=networking-policy-filter.extensions.config.gardener.cloud
+// +groupName=shoot-networking-filter.extensions.config.gardener.cloud
 package v1alpha1

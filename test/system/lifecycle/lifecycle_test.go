@@ -4,7 +4,7 @@
 
 /**
 	Overview
-		- Tests the lifecycle controller for the networking-policy-filter extension.
+		- Tests the lifecycle controller for the shoot-networking-filter extension.
 	Prerequisites
 		- A Shoot exists and the oidc extension is available for the seed cluster.
 **/
@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/gardener/gardener-extension-networking-policy-filter/pkg/constants"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	gutil "github.com/gardener/gardener/pkg/utils/gardener"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"

@@ -14,7 +14,7 @@ import (
 	"github.com/gardener/gardener/test/framework/config"
 	"github.com/gardener/gardener/test/framework/reporter"
 
-	_ "github.com/gardener/gardener-extension-networking-policy-filter/test/integration/healthcheck"
+	_ "github.com/gardener/gardener-extension-shoot-networking-filter/test/integration/healthcheck"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -45,5 +45,5 @@ func TestMain(m *testing.M) {
 }
 
 func TestGardenerSuite(t *testing.T) {
-	RunSpecsWithDefaultAndCustomReporters(t, "networking-policy-filter Test Suite", []Reporter{reporter.NewGardenerESReporter(*reportFilePath, *esIndex)})
+	RunSpecsWithDefaultAndCustomReporters(t, "shoot-networking-filter Test Suite", []Reporter{reporter.NewGardenerESReporter(*reportFilePath, *esIndex)})
 }

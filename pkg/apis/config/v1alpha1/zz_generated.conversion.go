@@ -12,7 +12,7 @@ package v1alpha1
 import (
 	unsafe "unsafe"
 
-	config "github.com/gardener/gardener-extension-networking-policy-filter/pkg/apis/config"
+	config "github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
 	healthcheckconfig "github.com/gardener/gardener/extensions/pkg/controller/healthcheck/config"
 	configv1alpha1 "github.com/gardener/gardener/extensions/pkg/controller/healthcheck/config/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

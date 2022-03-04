@@ -7,7 +7,7 @@ package healthcheck
 import (
 	"time"
 
-	"github.com/gardener/gardener-extension-networking-policy-filter/pkg/constants"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
 	"github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
 	healthcheckconfig "github.com/gardener/gardener/extensions/pkg/controller/healthcheck/config"
 	"github.com/gardener/gardener/extensions/pkg/controller/healthcheck/general"

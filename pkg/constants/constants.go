@@ -6,7 +6,7 @@ package constants
 
 const (
 	// ExtensionType is the name of the extension type.
-	ExtensionType = "networking-policy-filter"
+	ExtensionType = "shoot-networking-filter"
 	// ServiceName is the name of the service.
 	ServiceName = ExtensionType
 

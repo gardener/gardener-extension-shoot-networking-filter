@@ -7,12 +7,12 @@ package app
 import (
 	"os"
 
-	pfcmd "github.com/gardener/gardener-extension-networking-policy-filter/pkg/cmd"
+	pfcmd "github.com/gardener/gardener-extension-shoot-networking-filter/pkg/cmd"
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
 )
 
 // ExtensionName is the name of the extension.
-const ExtensionName = "networking-policy-filter"
+const ExtensionName = "shoot-networking-filter"
 
 // Options holds configuration passed to the Networking Policy Filter controller.
 type Options struct {

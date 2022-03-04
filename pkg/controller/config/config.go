@@ -5,7 +5,7 @@
 package config
 
 import (
-	"github.com/gardener/gardener-extension-networking-policy-filter/pkg/apis/config"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
 )
 
 // Config contains configuration for the policy filter.

@@ -5,7 +5,7 @@
 package main
 
 import (
-	"github.com/gardener/gardener-extension-networking-policy-filter/cmd/gardener-extension-networking-policy-filter/app"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/cmd/gardener-extension-shoot-networking-filter/app"
 
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	"github.com/gardener/gardener/pkg/logger"

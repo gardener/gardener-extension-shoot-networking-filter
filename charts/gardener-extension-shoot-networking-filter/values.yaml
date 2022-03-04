@@ -4,11 +4,11 @@
 
 ---
 image:
-  repository: eu.gcr.io/gardener-project/gardener/extensions/networking-policy-filter
+  repository: eu.gcr.io/gardener-project/gardener/extensions/shoot-networking-filter
   tag: latest
   pullPolicy: IfNotPresent
 
-serviceName: networking-policy-filter
+serviceName: shoot-networking-filter
 replicaCount: 1
 
 resources:
