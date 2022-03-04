@@ -116,8 +116,8 @@ func Convert_config_DownloaderConfig_To_v1alpha1_DownloaderConfig(in *config.Dow
 
 func autoConvert_v1alpha1_EgressFilter_To_config_EgressFilter(in *EgressFilter, out *config.EgressFilter, s conversion.Scope) error {
 	out.BlackholingEnabled = in.BlackholingEnabled
-	out.FilterSetProviderType = config.FilterSetProviderType(in.FilterSetProviderType)
-	out.StaticFilterSet = *(*[]config.Filter)(unsafe.Pointer(&in.StaticFilterSet))
+	out.FilterListProviderType = config.FilterListProviderType(in.FilterListProviderType)
+	out.StaticFilterList = *(*[]config.Filter)(unsafe.Pointer(&in.StaticFilterList))
 	out.DownloaderConfig = (*config.DownloaderConfig)(unsafe.Pointer(in.DownloaderConfig))
 	return nil
 }
@@ -129,8 +129,8 @@ func Convert_v1alpha1_EgressFilter_To_config_EgressFilter(in *EgressFilter, out 
 
 func autoConvert_config_EgressFilter_To_v1alpha1_EgressFilter(in *config.EgressFilter, out *EgressFilter, s conversion.Scope) error {
 	out.BlackholingEnabled = in.BlackholingEnabled
-	out.FilterSetProviderType = FilterSetProviderType(in.FilterSetProviderType)
-	out.StaticFilterSet = *(*[]Filter)(unsafe.Pointer(&in.StaticFilterSet))
+	out.FilterListProviderType = FilterListProviderType(in.FilterListProviderType)
+	out.StaticFilterList = *(*[]Filter)(unsafe.Pointer(&in.StaticFilterList))
 	out.DownloaderConfig = (*DownloaderConfig)(unsafe.Pointer(in.DownloaderConfig))
 	return nil
 }

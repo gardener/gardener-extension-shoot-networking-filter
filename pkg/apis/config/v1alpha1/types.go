@@ -31,29 +31,29 @@ type EgressFilter struct {
 	// BlackholingEnabled is a flag to set blackholing or firewall approach.
 	BlackholingEnabled bool `json:"blackholingEnabled"`
 
-	// FilterSetProviderType specifies how the filter set is retrieved.
+	// FilterListProviderType specifies how the filter list is retrieved.
 	// Supported types are `static` and `download`.
-	FilterSetProviderType FilterSetProviderType `json:"filterSetProviderType,omitempty"`
+	FilterListProviderType FilterListProviderType `json:"filterListProviderType,omitempty"`
 
-	// StaticFilterSet contains the static filter set.
+	// StaticFilterList contains the static filter list.
 	// Only used for provider type `static`.
 	// +optional
-	StaticFilterSet []Filter `json:"staticFilterSet,omitempty"`
+	StaticFilterList []Filter `json:"staticFilterList,omitempty"`
 
-	// DownloaderConfig contains the configuration for the filter set downloader.
+	// DownloaderConfig contains the configuration for the filter list downloader.
 	// Only used for provider type `download`.
 	// +optional
 	DownloaderConfig *DownloaderConfig `json:"downloaderConfig,omitempty"`
 }
 
-// FilterSetProviderType
-type FilterSetProviderType string
+// FilterListProviderType
+type FilterListProviderType string
 
 const (
-	// FilterSetProviderTypeStatic is the provider type for static filter set
-	FilterSetProviderTypeStatic FilterSetProviderType = "static"
-	// FilterSetProviderTypeDownload is the provider type for downloading the filter set from an URL
-	FilterSetProviderTypeDownload FilterSetProviderType = "download"
+	// FilterListProviderTypeStatic is the provider type for static filter list
+	FilterListProviderTypeStatic FilterListProviderType = "static"
+	// FilterListProviderTypeDownload is the provider type for downloading the filter list from an URL
+	FilterListProviderTypeDownload FilterListProviderType = "download"
 )
 
 // Policy is the access policy
@@ -74,12 +74,12 @@ type Filter struct {
 	Policy Policy `json:"policy"`
 }
 
-// DownloaderConfig contains the configuration for the filter set downloader.
+// DownloaderConfig contains the configuration for the filter list downloader.
 type DownloaderConfig struct {
-	// Endpoint is the endpoint URL for downloading the filter set.
+	// Endpoint is the endpoint URL for downloading the filter list.
 	Endpoint string `json:"endpoint"`
-	// RefreshPeriod is interval for refreshing the filter set.
-	// If unset, the filter set is only fetched on startup.
+	// RefreshPeriod is interval for refreshing the filter list.
+	// If unset, the filter list is only fetched on startup.
 	// +optional
 	RefreshPeriod *metav1.Duration `json:"refreshPeriod,omitempty"`
 }

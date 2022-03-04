@@ -29,4 +29,12 @@ const (
 
 	ImageEgressFilterBlackholer = "egress-filter-blackholer"
 	ImageEgressFilterFirwaller  = "egress-filter-firewaller"
+
+	// FilterListSecretName name of the secret containing the egress filter list
+	FilterListSecretName = "egress-filter-list"
+	// ExtensionNamespaceEnvName is the namespace of the extension deployment
+	ExtensionNamespaceEnvName = "EXTENSION_NAMESPACE"
+
+	KeyIPV4List = "ipv4-list"
+	KeyIPV6List = "ipv6-list"
 )

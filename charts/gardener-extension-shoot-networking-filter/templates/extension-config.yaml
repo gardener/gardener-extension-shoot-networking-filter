@@ -14,5 +14,5 @@ data:
     kind: Configuration
 {{- if .Values.egressFilter }}
     egressFilter:
-      blackholingEnabled: {{ .Values.egressFilter.blackholingEnabled }}
+{{ toYaml .Values.egressFilter | trim | indent 6 }}
 {{- end}}

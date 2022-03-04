@@ -8,6 +8,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
@@ -16,6 +17,7 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
+	"github.com/gardener/gardener/pkg/controllerutils"
 	"github.com/gardener/gardener/pkg/utils"
 	managedresources "github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
@@ -63,11 +65,20 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		}
 	*/
 	blackholingEnabled := true
+	secretData := map[string][]byte{
+		constants.KeyIPV4List: []byte("[]"),
+		constants.KeyIPV6List: []byte("[]"),
+	}
 	if a.serviceConfig.EgressFilter != nil {
 		blackholingEnabled = a.serviceConfig.EgressFilter.BlackholingEnabled
+		var err error
+		secretData, err = a.readFilterListSecretData(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
-	shootResources, err := getShootResources(blackholingEnabled)
+	shootResources, err := getShootResources(blackholingEnabled, secretData)
 	if err != nil {
 		return err
 	}
@@ -118,7 +129,7 @@ func (a *actuator) InjectConfig(config *rest.Config) error {
 // InjectClient injects the controller runtime client into the reconciler.
 func (a *actuator) InjectClient(client client.Client) error {
 	a.client = client
-	return nil
+	return a.updateStaticFilterListSecretIfNeeded()
 }
 
 // InjectScheme injects the given scheme into the reconciler.
@@ -127,15 +138,71 @@ func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
 	return nil
 }
 
-func getShootResources(blackholingEnabled bool) (map[string][]byte, error) {
+func (a *actuator) readFilterListSecretData(ctx context.Context) (map[string][]byte, error) {
+	namespace, err := getExtensionDeploymentNamespace()
+	if err != nil {
+		return nil, err
+	}
+	secret := &corev1.Secret{}
+	key := client.ObjectKey{Name: constants.FilterListSecretName, Namespace: namespace}
+	err = a.client.Get(ctx, key, secret)
+	if err != nil {
+		return nil, err
+	}
+	return secret.Data, nil
+}
+
+func (a *actuator) updateStaticFilterListSecretIfNeeded() error {
+	if a.serviceConfig.EgressFilter.FilterListProviderType == config.FilterListProviderTypeStatic {
+		ctx := context.Background()
+		return a.createStaticFilterListSecret(ctx, a.serviceConfig.EgressFilter.StaticFilterList)
+	}
+	return nil
+}
+
+func (a *actuator) createStaticFilterListSecret(ctx context.Context, filterList []config.Filter) error {
+	namespace, err := getExtensionDeploymentNamespace()
+	if err != nil {
+		return err
+	}
+	ipv4List, ipv6List, err := generateEgressFilterValues(filterList)
+	if err != nil {
+		return err
+	}
+	ipv4Data := convertToPlainYamlList(ipv4List)
+	ipv6Data := convertToPlainYamlList(ipv6List)
+
+	secret := &corev1.Secret{}
+	secret.Name = constants.FilterListSecretName
+	secret.Namespace = namespace
+	_, err = controllerutils.CreateOrGetAndMergePatch(ctx, a.client, secret, func() error {
+		secret.Data = map[string][]byte{
+			constants.KeyIPV4List: []byte(ipv4Data),
+			constants.KeyIPV6List: []byte(ipv6Data),
+		}
+		return nil
+	})
+	return err
+}
+
+func getExtensionDeploymentNamespace() (string, error) {
+	namespace := os.Getenv(constants.ExtensionNamespaceEnvName)
+	if namespace == "" {
+		return "", fmt.Errorf("missing env variable %q", constants.ExtensionNamespaceEnvName)
+	}
+	return namespace, nil
+}
+
+func getShootResources(blackholingEnabled bool, secretData map[string][]byte) (map[string][]byte, error) {
 	shootRegistry := managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
 
-	ipv4List := []byte("[]")
-	ipv6List := []byte("[]")
-	// TODO load ipv4/ipv6 lists
-	secretData := map[string][]byte{
-		"ipv4-list": ipv4List,
-		"ipv6-list": ipv6List,
+	if secretData == nil {
+		return nil, fmt.Errorf("missing filter list secret data")
+	}
+	for _, key := range []string{constants.KeyIPV4List, constants.KeyIPV6List} {
+		if _, ok := secretData[key]; !ok {
+			return nil, fmt.Errorf("missing key %q in filter list secret data", key)
+		}
 	}
 
 	checksumEgressFilter := utils.ComputeSecretChecksum(secretData)

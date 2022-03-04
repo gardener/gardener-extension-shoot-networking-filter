@@ -79,7 +79,7 @@ github.com/gardener/gardener/extensions/pkg/controller/healthcheck/config/v1alph
 <a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
 </p>
 <p>
-<p>DownloaderConfig contains the configuration for the filter set downloader.</p>
+<p>DownloaderConfig contains the configuration for the filter list downloader.</p>
 </p>
 <table>
 <thead>
@@ -97,7 +97,7 @@ string
 </em>
 </td>
 <td>
-<p>Endpoint is the endpoint URL for downloading the filter set.</p>
+<p>Endpoint is the endpoint URL for downloading the filter list.</p>
 </td>
 </tr>
 <tr>
@@ -111,8 +111,8 @@ Kubernetes meta/v1.Duration
 </td>
 <td>
 <em>(Optional)</em>
-<p>RefreshPeriod is interval for refreshing the filter set.
-If unset, the filter set is only fetched on startup.</p>
+<p>RefreshPeriod is interval for refreshing the filter list.
+If unset, the filter list is only fetched on startup.</p>
 </td>
 </tr>
 </tbody>
@@ -147,21 +147,21 @@ bool
 </tr>
 <tr>
 <td>
-<code>filterSetProviderType</code></br>
+<code>filterListProviderType</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.FilterSetProviderType">
-FilterSetProviderType
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.FilterListProviderType">
+FilterListProviderType
 </a>
 </em>
 </td>
 <td>
-<p>FilterSetProviderType specifies how the filter set is retrieved.
+<p>FilterListProviderType specifies how the filter list is retrieved.
 Supported types are <code>static</code> and <code>download</code>.</p>
 </td>
 </tr>
 <tr>
 <td>
-<code>staticFilterSet</code></br>
+<code>staticFilterList</code></br>
 <em>
 <a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Filter">
 []Filter
@@ -170,7 +170,7 @@ Supported types are <code>static</code> and <code>download</code>.</p>
 </td>
 <td>
 <em>(Optional)</em>
-<p>StaticFilterSet contains the static filter set.
+<p>StaticFilterList contains the static filter list.
 Only used for provider type <code>static</code>.</p>
 </td>
 </tr>
@@ -185,7 +185,7 @@ DownloaderConfig
 </td>
 <td>
 <em>(Optional)</em>
-<p>DownloaderConfig contains the configuration for the filter set downloader.
+<p>DownloaderConfig contains the configuration for the filter list downloader.
 Only used for provider type <code>download</code>.</p>
 </td>
 </tr>
@@ -234,14 +234,14 @@ Policy
 </tr>
 </tbody>
 </table>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.FilterSetProviderType">FilterSetProviderType
+<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.FilterListProviderType">FilterListProviderType
 (<code>string</code> alias)</p></h3>
 <p>
 (<em>Appears on:</em>
 <a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
 </p>
 <p>
-<p>FilterSetProviderType</p>
+<p>FilterListProviderType</p>
 </p>
 <h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Policy">Policy
 (<code>string</code> alias)</p></h3>

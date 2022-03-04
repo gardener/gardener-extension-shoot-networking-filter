@@ -28,27 +28,27 @@ type EgressFilter struct {
 	// BlackholingEnabled is a flag to set blackholing or firewall approach.
 	BlackholingEnabled bool
 
-	// FilterSetProviderType specifies how the filter set is retrieved.
+	// FilterListProviderType specifies how the filter list is retrieved.
 	// Supported types are `static` and `download`.
-	FilterSetProviderType FilterSetProviderType
+	FilterListProviderType FilterListProviderType
 
-	// StaticFilterSet contains the static filter set.
+	// StaticFilterList contains the static filter list.
 	// Only used for provider type `static`.
-	StaticFilterSet []Filter
+	StaticFilterList []Filter
 
-	// DownloaderConfig contains the configuration for the filter set downloader.
+	// DownloaderConfig contains the configuration for the filter list downloader.
 	// Only used for provider type `download`.
 	DownloaderConfig *DownloaderConfig
 }
 
-// FilterSetProviderType
-type FilterSetProviderType string
+// FilterListProviderType
+type FilterListProviderType string
 
 const (
-	// FilterSetProviderTypeStatic is the provider type for static filter set
-	FilterSetProviderTypeStatic FilterSetProviderType = "static"
-	// FilterSetProviderTypeDownload is the provider type for downloading the filter set from an URL
-	FilterSetProviderTypeDownload FilterSetProviderType = "download"
+	// FilterListProviderTypeStatic is the provider type for static filter list
+	FilterListProviderTypeStatic FilterListProviderType = "static"
+	// FilterListProviderTypeDownload is the provider type for downloading the filter list from an URL
+	FilterListProviderTypeDownload FilterListProviderType = "download"
 )
 
 // Policy is the access policy
@@ -69,11 +69,11 @@ type Filter struct {
 	Policy Policy
 }
 
-// DownloaderConfig contains the configuration for the filter set downloader.
+// DownloaderConfig contains the configuration for the filter list downloader.
 type DownloaderConfig struct {
-	// Endpoint is the endpoint URL for downloading the filter set.
+	// Endpoint is the endpoint URL for downloading the filter list.
 	Endpoint string
-	// RefreshPeriod is interval for refreshing the filter set.
-	// If unset, the filter set is only fetched on startup.
+	// RefreshPeriod is interval for refreshing the filter list.
+	// If unset, the filter list is only fetched on startup.
 	RefreshPeriod *metav1.Duration
 }
