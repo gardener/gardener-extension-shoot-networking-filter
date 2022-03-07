@@ -17,7 +17,6 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
-	"github.com/gardener/gardener/pkg/controllerutils"
 	"github.com/gardener/gardener/pkg/utils"
 	managedresources "github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
@@ -129,7 +128,7 @@ func (a *actuator) InjectConfig(config *rest.Config) error {
 // InjectClient injects the controller runtime client into the reconciler.
 func (a *actuator) InjectClient(client client.Client) error {
 	a.client = client
-	return a.updateStaticFilterListSecretIfNeeded()
+	return a.setupFilterListProvider()
 }
 
 // InjectScheme injects the given scheme into the reconciler.
@@ -152,37 +151,17 @@ func (a *actuator) readFilterListSecretData(ctx context.Context) (map[string][]b
 	return secret.Data, nil
 }
 
-func (a *actuator) updateStaticFilterListSecretIfNeeded() error {
-	if a.serviceConfig.EgressFilter.FilterListProviderType == config.FilterListProviderTypeStatic {
-		ctx := context.Background()
-		return a.createStaticFilterListSecret(ctx, a.serviceConfig.EgressFilter.StaticFilterList)
+func (a *actuator) setupFilterListProvider() error {
+	switch a.serviceConfig.EgressFilter.FilterListProviderType {
+	case config.FilterListProviderTypeStatic:
+		p := newStaticFilterListProvider(context.Background(), a.client, a.logger, a.serviceConfig.EgressFilter.StaticFilterList)
+		return p.setup()
+	case config.FilterListProviderTypeDownload:
+		p := newDownloaderFilterListProvider(context.Background(), a.client, a.logger, a.serviceConfig.EgressFilter.DownloaderConfig)
+		return p.setup()
+	default:
+		return fmt.Errorf("unexpected FilterListProviderType: %s", a.serviceConfig.EgressFilter.FilterListProviderType)
 	}
-	return nil
-}
-
-func (a *actuator) createStaticFilterListSecret(ctx context.Context, filterList []config.Filter) error {
-	namespace, err := getExtensionDeploymentNamespace()
-	if err != nil {
-		return err
-	}
-	ipv4List, ipv6List, err := generateEgressFilterValues(filterList)
-	if err != nil {
-		return err
-	}
-	ipv4Data := convertToPlainYamlList(ipv4List)
-	ipv6Data := convertToPlainYamlList(ipv6List)
-
-	secret := &corev1.Secret{}
-	secret.Name = constants.FilterListSecretName
-	secret.Namespace = namespace
-	_, err = controllerutils.CreateOrGetAndMergePatch(ctx, a.client, secret, func() error {
-		secret.Data = map[string][]byte{
-			constants.KeyIPV4List: []byte(ipv4Data),
-			constants.KeyIPV6List: []byte(ipv6Data),
-		}
-		return nil
-	})
-	return err
 }
 
 func getExtensionDeploymentNamespace() (string, error) {

@@ -78,6 +78,9 @@ type Filter struct {
 type DownloaderConfig struct {
 	// Endpoint is the endpoint URL for downloading the filter list.
 	Endpoint string `json:"endpoint"`
+	// Authorization is static authorization header.
+	// +optional
+	Authorization *string
 	// RefreshPeriod is interval for refreshing the filter list.
 	// If unset, the filter list is only fetched on startup.
 	// +optional

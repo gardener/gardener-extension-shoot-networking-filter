@@ -40,6 +40,13 @@ vpa:
 gardener:
   version: ""
 
+## settings for metrics, e.g. scraping by seed-prometheus
+##
+metrics:
+  ## enable metrics scraping
+  ##
+  enableScraping: true
+
 egressFilter:
   blackholingEnabled: true
   filterListProviderType: static

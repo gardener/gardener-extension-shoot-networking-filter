@@ -73,6 +73,8 @@ type Filter struct {
 type DownloaderConfig struct {
 	// Endpoint is the endpoint URL for downloading the filter list.
 	Endpoint string
+	// Authorization is static authorization header.
+	Authorization *string
 	// RefreshPeriod is interval for refreshing the filter list.
 	// If unset, the filter list is only fetched on startup.
 	RefreshPeriod *metav1.Duration

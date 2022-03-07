@@ -102,6 +102,18 @@ string
 </tr>
 <tr>
 <td>
+<code>Authorization</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Authorization is static authorization header.</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>refreshPeriod</code></br>
 <em>
 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#duration-v1-meta">

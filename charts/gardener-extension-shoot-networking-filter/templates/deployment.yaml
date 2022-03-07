@@ -27,9 +27,14 @@ spec:
     metadata:
       annotations:
         checksum/configmap-extension-shoot-networking-filter.config: {{ include (print $.Template.BasePath "/extension-config.yaml") . | sha256sum }}
-      {{- if .Values.imageVectorOverwrite }}
+        {{- if .Values.imageVectorOverwrite }}
         checksum/configmap-extension-imagevector-overwrite: {{ include (print $.Template.BasePath "/configmap-imagevector-overwrite.yaml") . | sha256sum }}
-      {{- end }}
+        {{- end }}
+        {{- if and .Values.metrics.enableScraping }}
+        prometheus.io/scrape: "true"
+        # default metrics endpoint in controller-runtime
+        prometheus.io/port: "8080"
+        {{- end }}
       labels:
         app.kubernetes.io/name: gardener-extension-{{ .Values.serviceName }}
         app.kubernetes.io/instance: {{ .Release.Name }}
