@@ -73,9 +73,22 @@ type Filter struct {
 type DownloaderConfig struct {
 	// Endpoint is the endpoint URL for downloading the filter list.
 	Endpoint string
-	// Authorization is static authorization header.
-	Authorization *string
+	// OAuth2Endpoint contains the optional OAuth endpoint for fetching the access token.
+	// If specified, the OAuth2Secret must be provided, too.
+	OAuth2Endpoint *string
 	// RefreshPeriod is interval for refreshing the filter list.
 	// If unset, the filter list is only fetched on startup.
 	RefreshPeriod *metav1.Duration
+}
+
+// OAuth2Secret contains the secret data for the optional oauth2 authorisation.
+type OAuth2Secret struct {
+	// ClientID is the OAuth2 client id.
+	ClientID string
+	// ClientSecret is the optional OAuth2 client secret.
+	ClientSecret string
+	// ClientCert is the optional client certificate.
+	ClientCert []byte
+	// ClientCertKey is the optional private key of the client certificate.
+	ClientCertKey []byte
 }

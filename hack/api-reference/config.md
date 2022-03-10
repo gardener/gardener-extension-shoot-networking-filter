@@ -102,14 +102,15 @@ string
 </tr>
 <tr>
 <td>
-<code>Authorization</code></br>
+<code>oauth2Endpoint</code></br>
 <em>
 string
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>Authorization is static authorization header.</p>
+<p>OAuth2Endpoint contains the optional OAuth endpoint for fetching the access token.
+If specified, the OAuth2Secret must be provided, too.</p>
 </td>
 </tr>
 <tr>

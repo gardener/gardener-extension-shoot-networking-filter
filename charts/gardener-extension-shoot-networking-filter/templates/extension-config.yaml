@@ -14,5 +14,10 @@ data:
     kind: Configuration
 {{- if .Values.egressFilter }}
     egressFilter:
-{{ toYaml .Values.egressFilter | trim | indent 6 }}
+  {{- range $k, $v := .Values.egressFilter }}
+    {{- if ne $k "oauth2Secret" }}
+      {{ $k }}:
+{{ toYaml $v | trim | indent 8 }}
+    {{- end}}
+  {{- end}}
 {{- end}}

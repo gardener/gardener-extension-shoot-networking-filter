@@ -35,6 +35,17 @@ const (
 	// ExtensionNamespaceEnvName is the namespace of the extension deployment
 	ExtensionNamespaceEnvName = "EXTENSION_NAMESPACE"
 
+	// KeyIPV4List is the key in the filter list secret for the ipv4 policy list
 	KeyIPV4List = "ipv4-list"
+	// KeyIPV6List is the key in the filter list secret for the ipv6 policy list
 	KeyIPV6List = "ipv6-list"
+
+	// KeyClientID is the key in the OAuth2 secret for the client ID.
+	KeyClientID = "clientID"
+	// KeyClientSecret is the key in the OAuth2 secret for the optional client secret.
+	KeyClientSecret = "clientSecret"
+	// KeyClientCert is the key in the OAuth2 secret for the optional client certificate.
+	KeyClientCert = "client.crt.pem"
+	// KeyClientCertKey is the key in the OAuth2 secret for the optional private key of the client certificate.
+	KeyClientCertKey = "client.key.pem"
 )

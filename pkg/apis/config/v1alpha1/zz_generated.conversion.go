@@ -94,7 +94,7 @@ func Convert_config_Configuration_To_v1alpha1_Configuration(in *config.Configura
 
 func autoConvert_v1alpha1_DownloaderConfig_To_config_DownloaderConfig(in *DownloaderConfig, out *config.DownloaderConfig, s conversion.Scope) error {
 	out.Endpoint = in.Endpoint
-	out.Authorization = (*string)(unsafe.Pointer(in.Authorization))
+	out.OAuth2Endpoint = (*string)(unsafe.Pointer(in.OAuth2Endpoint))
 	out.RefreshPeriod = (*v1.Duration)(unsafe.Pointer(in.RefreshPeriod))
 	return nil
 }
@@ -106,7 +106,7 @@ func Convert_v1alpha1_DownloaderConfig_To_config_DownloaderConfig(in *Downloader
 
 func autoConvert_config_DownloaderConfig_To_v1alpha1_DownloaderConfig(in *config.DownloaderConfig, out *DownloaderConfig, s conversion.Scope) error {
 	out.Endpoint = in.Endpoint
-	out.Authorization = (*string)(unsafe.Pointer(in.Authorization))
+	out.OAuth2Endpoint = (*string)(unsafe.Pointer(in.OAuth2Endpoint))
 	out.RefreshPeriod = (*v1.Duration)(unsafe.Pointer(in.RefreshPeriod))
 	return nil
 }

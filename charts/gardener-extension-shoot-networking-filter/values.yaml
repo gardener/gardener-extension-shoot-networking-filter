@@ -50,3 +50,28 @@ metrics:
 egressFilter:
   blackholingEnabled: true
   filterListProviderType: static
+
+#  staticFilterList:
+#    - network: 1.2.3.4/31
+#      policy: BLOCK_ACCESS
+#    - network: 5.6.7.8/32
+#      policy: BLOCK_ACCESS
+#    - network: ::2/128
+#      policy: BLOCK_ACCESS
+#
+#  downloaderConfig:
+#    endpoint: https://filterlist.example.com/some/path
+#    oauth2Endpoint: https://auth.example.com/oauth2/token
+#    refreshPeriod: 1h
+#
+#  oauth2Secret:
+#    clientID: 1-2-3-4
+#    clientSecret: secret!!
+#    client.crt.pem: |
+#      -----BEGIN CERTIFICATE-----
+#      ...
+#      -----END CERTIFICATE-----
+#    client.key.pem: |
+#      -----BEGIN PRIVATE KEY-----
+#      ...
+#      -----END PRIVATE KEY-----

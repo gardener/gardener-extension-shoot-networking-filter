@@ -78,9 +78,10 @@ type Filter struct {
 type DownloaderConfig struct {
 	// Endpoint is the endpoint URL for downloading the filter list.
 	Endpoint string `json:"endpoint"`
-	// Authorization is static authorization header.
+	// OAuth2Endpoint contains the optional OAuth endpoint for fetching the access token.
+	// If specified, the OAuth2Secret must be provided, too.
 	// +optional
-	Authorization *string
+	OAuth2Endpoint *string `json:"oauth2Endpoint,omitempty"`
 	// RefreshPeriod is interval for refreshing the filter list.
 	// If unset, the filter list is only fetched on startup.
 	// +optional

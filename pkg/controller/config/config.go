@@ -11,4 +11,5 @@ import (
 // Config contains configuration for the policy filter.
 type Config struct {
 	config.Configuration
+	OAuth2Secret *config.OAuth2Secret
 }

@@ -16,9 +16,9 @@ An example for a `ControllerRegistration` resource that can be used to register 
 
 Please find more information regarding the extensibility concepts and a detailed proposal [here](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md).
 
-** TODO **
-
 ## Extension Resources
+
+Currently there is nothing to specify in the extension spec.
 
 Example extension resource:
 
@@ -31,7 +31,9 @@ metadata:
 spec:
 ```
 
-When an extension resource is reconciled, the extension controller will create an instance of [OIDC Webhook Authenticator](https://github.com/gardener/oidc-webhook-authenticator). These resources are placed inside the shoot namespace on the seed. Also, the controller takes care about generating necessary `RBAC` resources for the seed as well as for the shoot.
+When an extension resource is reconciled, the extension controller will create a daemonset `egress-filter-applier` on the shoot containing either
+a [blackholer](https://github.com/gardener/egress-filter-refresher/tree/master/blackholer) or [firewaller](https://github.com/gardener/egress-filter-refresher/tree/master/firewaller) container.
+
 
 Please note, this extension controller relies on the [Gardener-Resource-Manager](https://github.com/gardener/gardener/blob/master/docs/concepts/resource-manager.md) to deploy k8s resources to seed and shoot clusters.
 

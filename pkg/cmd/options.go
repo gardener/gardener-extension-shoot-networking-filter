@@ -6,10 +6,13 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"path"
 
 	apisconfig "github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config/v1alpha1"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
 	controllerconfig "github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/config"
 	healthcheckcontroller "github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/healthcheck"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/lifecycle"
@@ -38,13 +41,15 @@ func init() {
 
 // PolicyFilterOptions holds options related to the policy filter controller.
 type PolicyFilterOptions struct {
-	ConfigLocation string
-	config         *PolicyFilterConfig
+	ConfigLocation  string
+	OAuth2ConfigDir string
+	config          *PolicyFilterConfig
 }
 
 // AddFlags implements Flagger.AddFlags.
 func (o *PolicyFilterOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.ConfigLocation, "config", "", "Path to policy filter configuration")
+	fs.StringVar(&o.OAuth2ConfigDir, "oauth2-config-dir", "", "Directory with oauth2 configuration")
 }
 
 // Complete implements Completer.Complete.
@@ -63,8 +68,27 @@ func (o *PolicyFilterOptions) Complete() error {
 		return err
 	}
 
+	var oauth2Secret *apisconfig.OAuth2Secret
+	if config.EgressFilter != nil && config.EgressFilter.DownloaderConfig != nil && o.OAuth2ConfigDir != "" {
+		secretData := &apisconfig.OAuth2Secret{}
+		filename := path.Join(o.OAuth2ConfigDir, constants.KeyClientID)
+		clientID, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return fmt.Errorf("cannot read clientID from %s: %w", filename, err)
+		}
+		secretData.ClientID = string(clientID)
+		clientSecret, err := ioutil.ReadFile(path.Join(o.OAuth2ConfigDir, constants.KeyClientSecret))
+		if err == nil {
+			secretData.ClientSecret = string(clientSecret)
+		}
+		secretData.ClientCert, _ = ioutil.ReadFile(path.Join(o.OAuth2ConfigDir, constants.KeyClientCert))
+		secretData.ClientCertKey, _ = ioutil.ReadFile(path.Join(o.OAuth2ConfigDir, constants.KeyClientCertKey))
+		oauth2Secret = secretData
+	}
+
 	o.config = &PolicyFilterConfig{
-		config: config,
+		config:       config,
+		oAuth2Secret: oauth2Secret,
 	}
 
 	return nil
@@ -77,12 +101,14 @@ func (o *PolicyFilterOptions) Completed() *PolicyFilterConfig {
 
 // PolicyFilterConfig contains configuration information about the OIDC service.
 type PolicyFilterConfig struct {
-	config apisconfig.Configuration
+	config       apisconfig.Configuration
+	oAuth2Secret *apisconfig.OAuth2Secret
 }
 
 // Apply applies the PolicyFilterOptions to the passed ControllerOptions instance.
 func (c *PolicyFilterConfig) Apply(config *controllerconfig.Config) {
 	config.Configuration = c.config
+	config.OAuth2Secret = c.oAuth2Secret
 }
 
 // ApplyHealthCheckConfig applies the HealthCheckConfig to the config.

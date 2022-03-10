@@ -8,7 +8,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
@@ -39,10 +38,11 @@ const (
 )
 
 // NewActuator returns an actuator responsible for Extension resources.
-func NewActuator(config config.Configuration) extension.Actuator {
+func NewActuator(config config.Configuration, oauth2secret *config.OAuth2Secret) extension.Actuator {
 	return &actuator{
 		logger:        log.Log.WithName(ActuatorName),
 		serviceConfig: config,
+		oauth2secret:  oauth2secret,
 	}
 }
 
@@ -51,18 +51,13 @@ type actuator struct {
 	config        *rest.Config
 	decoder       runtime.Decoder
 	serviceConfig config.Configuration
+	oauth2secret  *config.OAuth2Secret
+	provider      filterListProvider
 	logger        logr.Logger
 }
 
 // Reconcile the Extension resource.
 func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extension) error {
-	namespace := ex.GetNamespace()
-	/*
-		cluster, err := controller.GetCluster(ctx, a.client, namespace)
-		if err != nil {
-			return err
-		}
-	*/
 	blackholingEnabled := true
 	secretData := map[string][]byte{
 		constants.KeyIPV4List: []byte("[]"),
@@ -82,6 +77,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 		return err
 	}
 
+	namespace := ex.GetNamespace()
 	return managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, false, shootResources)
 }
 
@@ -138,38 +134,20 @@ func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
 }
 
 func (a *actuator) readFilterListSecretData(ctx context.Context) (map[string][]byte, error) {
-	namespace, err := getExtensionDeploymentNamespace()
-	if err != nil {
-		return nil, err
-	}
-	secret := &corev1.Secret{}
-	key := client.ObjectKey{Name: constants.FilterListSecretName, Namespace: namespace}
-	err = a.client.Get(ctx, key, secret)
-	if err != nil {
-		return nil, err
-	}
-	return secret.Data, nil
+	return a.provider.ReadSecretData(ctx)
 }
 
 func (a *actuator) setupFilterListProvider() error {
 	switch a.serviceConfig.EgressFilter.FilterListProviderType {
 	case config.FilterListProviderTypeStatic:
-		p := newStaticFilterListProvider(context.Background(), a.client, a.logger, a.serviceConfig.EgressFilter.StaticFilterList)
-		return p.setup()
+		a.provider = newStaticFilterListProvider(context.Background(), a.client, a.logger, a.serviceConfig.EgressFilter.StaticFilterList)
 	case config.FilterListProviderTypeDownload:
-		p := newDownloaderFilterListProvider(context.Background(), a.client, a.logger, a.serviceConfig.EgressFilter.DownloaderConfig)
-		return p.setup()
+		a.provider = newDownloaderFilterListProvider(context.Background(), a.client, a.logger,
+			a.serviceConfig.EgressFilter.DownloaderConfig, a.oauth2secret)
 	default:
 		return fmt.Errorf("unexpected FilterListProviderType: %s", a.serviceConfig.EgressFilter.FilterListProviderType)
 	}
-}
-
-func getExtensionDeploymentNamespace() (string, error) {
-	namespace := os.Getenv(constants.ExtensionNamespaceEnvName)
-	if namespace == "" {
-		return "", fmt.Errorf("missing env variable %q", constants.ExtensionNamespaceEnvName)
-	}
-	return namespace, nil
+	return a.provider.Setup()
 }
 
 func getShootResources(blackholingEnabled bool, secretData map[string][]byte) (map[string][]byte, error) {
