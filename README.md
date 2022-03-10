@@ -1,4 +1,4 @@
-# [Gardener Extension for openid connect services](https://gardener.cloud)
+# [Gardener Extension for Networking Filter](https://gardener.cloud)
 
 [![reuse compliant](https://reuse.software/badge/reuse-compliant.svg)](https://reuse.software/)
 
@@ -45,7 +45,7 @@ We are using Go modules for Golang package dependency management and [Ginkgo](ht
 
 ## Feedback and Support
 
-Feedback and contributions are always welcome. Please report bugs or suggestions as [GitHub issues](https://github.com/gardener/gardener-extension-shoot-oidc-service/issues) or join our [Slack channel #gardener](https://kubernetes.slack.com/messages/gardener) (please invite yourself to the Kubernetes workspace [here](http://slack.k8s.io)).
+Feedback and contributions are always welcome. Please report bugs or suggestions as [GitHub issues](https://github.com/gardener/gardener-extension-shoot-networking-filter/issues) or join our [Slack channel #gardener](https://kubernetes.slack.com/messages/gardener) (please invite yourself to the Kubernetes workspace [here](http://slack.k8s.io)).
 
 ## Learn more!
 

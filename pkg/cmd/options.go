@@ -99,7 +99,7 @@ func (o *PolicyFilterOptions) Completed() *PolicyFilterConfig {
 	return o.config
 }
 
-// PolicyFilterConfig contains configuration information about the OIDC service.
+// PolicyFilterConfig contains configuration information about the networking policy filter.
 type PolicyFilterConfig struct {
 	config       apisconfig.Configuration
 	oAuth2Secret *apisconfig.OAuth2Secret

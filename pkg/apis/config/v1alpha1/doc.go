@@ -9,6 +9,6 @@
 
 //go:generate gen-crd-api-reference-docs -api-dir . -config ../../../../hack/api-reference/config.json -template-dir ../../../../vendor/github.com/gardener/gardener/hack/api-reference/template -out-file ../../../../hack/api-reference/config.md
 
-// Package v1alpha1 contains the OIDC Shoot Service extension configuration.
+// Package v1alpha1 contains the shoot networking filter extension configuration.
 // +groupName=shoot-networking-filter.extensions.config.gardener.cloud
 package v1alpha1

@@ -49,7 +49,8 @@ const (
 	timeout = 30 * time.Minute
 )
 
-var _ = Describe("Shoot oidc service testing", func() {
+// TODO
+var _ = Describe("Shoot networking filter testing", func() {
 	f := framework.NewShootFramework(nil)
 
 	var initialExtensionConfig []gardencorev1beta1.Extension
@@ -189,7 +190,7 @@ var _ = Describe("Shoot oidc service testing", func() {
 		err = f.SeedClient.Client().Get(ctx, client.ObjectKeyFromObject(oidcDeployment), oidcDeployment)
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(BeNotFoundError())
-
+/*
 		// Ensure that manually deployed secrets are deleted
 		for _, name := range []string{
 			gutil.SecretNamePrefixShootAccess + constants.TokenValidator,
@@ -206,6 +207,8 @@ var _ = Describe("Shoot oidc service testing", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(BeNotFoundError())
 		}
+*/
+ */
 	}, timeout)
 })
 

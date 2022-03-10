@@ -22,10 +22,6 @@ const (
 
 	// ApplicationName is the name for resource describing the components deployed by the extension controller.
 	ApplicationName = "egress-filter-applier"
-	// WebhookTLSecretName is the name of the TLS secret resource used by the OIDC webhook in the seed cluster.
-	WebhookTLSecretName = ApplicationName + "-tls"
-	// TokenValidator is used to name the resources used to allow the kube-apiserver to validate tokens against the oidc authenticator.
-	TokenValidator = ApplicationName + "-token-validator"
 
 	ImageEgressFilterBlackholer = "egress-filter-blackholer"
 	ImageEgressFilterFirwaller  = "egress-filter-firewaller"

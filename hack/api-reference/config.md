@@ -6,7 +6,7 @@
 </ul>
 <h2 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1">shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1</h2>
 <p>
-<p>Package v1alpha1 contains the OIDC Shoot Service extension configuration.</p>
+<p>Package v1alpha1 contains the shoot networking filter extension configuration.</p>
 </p>
 Resource Types:
 <ul><li>
