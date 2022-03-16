@@ -61,7 +61,7 @@ func (p *basicFilterListProvider) createOrUpdateFilterListSecret(ctx context.Con
 	if err != nil {
 		return err
 	}
-	ipv4List, ipv6List, err := generateEgressFilterValues(filterList)
+	ipv4List, ipv6List, err := generateEgressFilterValues(filterList, p.logger)
 	if err != nil {
 		return err
 	}
