@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
+
+	"github.com/go-logr/logr"
 )
 
 var privateIPv4Ranges []net.IPNet
@@ -35,7 +37,7 @@ func init() {
 	privateIPv6Ranges = []net.IPNet{*ipv6Range1, *ipv6RangeFE80, *ipv6RangeFC00}
 }
 
-func generateEgressFilterValues(entries []config.Filter) ([]string, []string, error) {
+func generateEgressFilterValues(entries []config.Filter, logger logr.Logger) ([]string, []string, error) {
 	if len(entries) == 0 {
 		return []string{}, []string{}, nil
 	}
@@ -47,18 +49,21 @@ OUTER:
 		if entry.Policy == config.PolicyBlockAccess {
 			ip, net, err := net.ParseCIDR(entry.Network)
 			if err != nil {
+				logger.Error(err, "Error parsing CIDR from filter list, ignoring it", "offending CIDR", net.String())
 				continue
 			}
 			if ip.To4() != nil {
 				for _, privateNet := range privateIPv4Ranges {
-					if privateNet.Contains(ip) {
+					if privateNet.Contains(ip) || net.Contains(privateNet.IP) {
+						logger.Info("Identified overlapping CIDR in filter list, ignoring it", "offending CIDR", net.String(), "reserved range", privateNet.String())
 						continue OUTER
 					}
 				}
 				ipv4 = append(ipv4, net.String())
 			} else {
 				for _, privateNet := range privateIPv6Ranges {
-					if privateNet.Contains(ip) {
+					if privateNet.Contains(ip) || net.Contains(privateNet.IP) {
+						logger.Info("Identified overlapping CIDR in filter list, ignoring it", "offending CIDR", net.String(), "reserved range", privateNet.String())
 						continue OUTER
 					}
 				}
