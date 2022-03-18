@@ -11,6 +11,7 @@
 
 package lifecycle_test
 
+/*
 import (
 	"context"
 	"crypto/tls"
@@ -207,8 +208,7 @@ var _ = Describe("Shoot networking filter testing", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(BeNotFoundError())
 		}
-*/
- */
+
 	}, timeout)
 })
 
@@ -312,3 +312,4 @@ type status struct {
 	Reason  string
 	Status  string
 }
+*/
