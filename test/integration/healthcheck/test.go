@@ -9,9 +9,7 @@
 		- A Shoot exists.
 	Test-case:
 		1) Extension CRD
-			1.1) HealthCondition Type: ShootControlPlaneHealthy
-				-  update the ManagedResource 'extension-shoot-networking-filter-seed' and verify the health check conditions in the Extension CRD status.
-			1.2) HealthCondition Type: ShootSystemComponentsHealthy
+			1.1) HealthCondition Type: ShootSystemComponentsHealthy
 				-  update the ManagedResource 'extension-shoot-networking-filter-shoot' and verify the health check conditions in the Extension CRD status.
  **/
 
@@ -37,13 +35,6 @@ var _ = ginkgo.Describe("Extension-shoot-networking-filter integration test: hea
 	f := framework.NewShootFramework(nil)
 
 	ginkgo.Context("Extension", func() {
-		ginkgo.Context("Condition type: ShootControlPlaneHealthy", func() {
-			f.Serial().Release().CIt(fmt.Sprintf("Extension CRD should contain unhealthy condition due to ManagedResource '%s' is unhealthy", constants.ManagedResourceNamesSeed), func(ctx context.Context) {
-				err := healthcheckoperation.ExtensionHealthCheckWithManagedResource(ctx, timeout, f, "shoot-networking-filter", constants.ManagedResourceNamesSeed, gardencorev1beta1.ShootControlPlaneHealthy)
-				framework.ExpectNoError(err)
-			}, timeout)
-		})
-
 		ginkgo.Context("Condition type: ShootSystemComponentsHealthy", func() {
 			f.Serial().Release().CIt(fmt.Sprintf("Extension CRD should contain unhealthy condition due to ManagedResource '%s' is unhealthy", constants.ManagedResourceNamesShoot), func(ctx context.Context) {
 				err := healthcheckoperation.ExtensionHealthCheckWithManagedResource(ctx, timeout, f, "shoot-networking-filter", constants.ManagedResourceNamesShoot, gardencorev1beta1.ShootSystemComponentsHealthy)

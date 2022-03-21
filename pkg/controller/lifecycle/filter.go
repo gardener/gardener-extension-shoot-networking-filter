@@ -49,7 +49,7 @@ OUTER:
 		if entry.Policy == config.PolicyBlockAccess {
 			ip, net, err := net.ParseCIDR(entry.Network)
 			if err != nil {
-				logger.Error(err, "Error parsing CIDR from filter list, ignoring it", "offending CIDR", net.String())
+				logger.Error(err, "Error parsing CIDR from filter list, ignoring it", "offending CIDR", entry.Network)
 				continue
 			}
 			if ip.To4() != nil {

@@ -15,8 +15,6 @@ const (
 	EgressFilterSecretName = extensionServiceName
 	// NamespaceKubeSystem kube-system namespace
 	NamespaceKubeSystem = "kube-system"
-	// ManagedResourceNamesSeed is the name used to describe the managed seed resources.
-	ManagedResourceNamesSeed = extensionServiceName + "-seed"
 	// ManagedResourceNamesShoot is the name used to describe the managed shoot resources.
 	ManagedResourceNamesShoot = extensionServiceName + "-shoot"
 
