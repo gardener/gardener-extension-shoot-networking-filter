@@ -44,6 +44,10 @@ type EgressFilter struct {
 	// Only used for provider type `download`.
 	// +optional
 	DownloaderConfig *DownloaderConfig `json:"downloaderConfig,omitempty"`
+
+	// EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.
+	// +optional
+	EnsureConnectivity *EnsureConnectivity `json:"ensureConnectivity,omitempty"`
 }
 
 // FilterListProviderType
@@ -86,4 +90,11 @@ type DownloaderConfig struct {
 	// If unset, the filter list is only fetched on startup.
 	// +optional
 	RefreshPeriod *metav1.Duration `json:"refreshPeriod,omitempty"`
+}
+
+// EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.
+type EnsureConnectivity struct {
+	// SeedNamespaces contains the seed namespaces to check for load balancers.
+	// +optional
+	SeedNamespaces []string `json:"seedNamespaces,omitempty"`
 }

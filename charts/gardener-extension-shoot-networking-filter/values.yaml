@@ -50,6 +50,11 @@ metrics:
 egressFilter:
   blackholingEnabled: true
   filterListProviderType: static
+  ensureConnectivity:
+    seedNamespaces:
+      - kube-system
+      - garden
+      - istio-ingress
 
 #  staticFilterList:
 #    - network: 1.2.3.4/31

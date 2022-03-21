@@ -39,6 +39,9 @@ type EgressFilter struct {
 	// DownloaderConfig contains the configuration for the filter list downloader.
 	// Only used for provider type `download`.
 	DownloaderConfig *DownloaderConfig
+
+	// EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.
+	EnsureConnectivity *EnsureConnectivity
 }
 
 // FilterListProviderType
@@ -91,4 +94,10 @@ type OAuth2Secret struct {
 	ClientCert []byte
 	// ClientCertKey is the optional private key of the client certificate.
 	ClientCertKey []byte
+}
+
+// EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.
+type EnsureConnectivity struct {
+	// SeedNamespaces contains the seed namespaces to check for load balancers.
+	SeedNamespaces []string
 }

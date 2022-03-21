@@ -202,6 +202,51 @@ DownloaderConfig
 Only used for provider type <code>download</code>.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>ensureConnectivity</code></br>
+<em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EnsureConnectivity">
+EnsureConnectivity
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EnsureConnectivity">EnsureConnectivity
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
+</p>
+<p>
+<p>EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>seedNamespaces</code></br>
+<em>
+[]string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>SeedNamespaces contains the seed namespaces to check for load balancers.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Filter">Filter
