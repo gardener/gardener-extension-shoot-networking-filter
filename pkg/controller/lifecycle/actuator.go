@@ -148,7 +148,7 @@ func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context) (map
 		return nil, err
 	}
 
-	filteredSecretData, err := filterSecretDataForIPs(secretData, seedLoadBalancerIPs)
+	filteredSecretData, err := filterSecretDataForIPs(a.logger, secretData, seedLoadBalancerIPs)
 	if err != nil {
 		return nil, err
 	}

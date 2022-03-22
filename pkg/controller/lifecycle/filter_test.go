@@ -152,7 +152,7 @@ var _ = Describe("Filter methods", func() {
 		for k, v := range input {
 			in[k] = []byte(v)
 		}
-		actual, err := filterSecretDataForIPs(in, ips)
+		actual, err := filterSecretDataForIPs(logger, in, ips)
 		Expect(err).To(BeNil())
 		out := map[string]string{}
 		for k, v := range actual {

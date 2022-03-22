@@ -105,18 +105,18 @@ func ipNetListfromPlainYamlList(yaml string) []net.IPNet {
 	return result
 }
 
-func filterSecretDataForIPs(secretData map[string][]byte, lbIPs []net.IP) (map[string][]byte, error) {
+func filterSecretDataForIPs(logger logr.Logger, secretData map[string][]byte, lbIPs []net.IP) (map[string][]byte, error) {
 	filteredSecretData := map[string][]byte{}
 	for key, value := range secretData {
 		switch key {
 		case constants.KeyIPV4List:
 			ipV4List := ipNetListfromPlainYamlList(string(value))
-			ipV4List = filterIPNetListForIPs(ipV4List, lbIPs)
+			ipV4List = filterIPNetListForIPs(logger, ipV4List, lbIPs)
 			strList := ipNetListToStringList(ipV4List)
 			value = []byte(convertToPlainYamlList(strList))
 		case constants.KeyIPV6List:
 			ipV6List := ipNetListfromPlainYamlList(string(value))
-			ipV6List = filterIPNetListForIPs(ipV6List, lbIPs)
+			ipV6List = filterIPNetListForIPs(logger, ipV6List, lbIPs)
 			strList := ipNetListToStringList(ipV6List)
 			value = []byte(convertToPlainYamlList(strList))
 		}
@@ -125,11 +125,12 @@ func filterSecretDataForIPs(secretData map[string][]byte, lbIPs []net.IP) (map[s
 	return filteredSecretData, nil
 }
 
-func filterIPNetListForIPs(filterList []net.IPNet, lbIPs []net.IP) []net.IPNet {
+func filterIPNetListForIPs(logger logr.Logger, filterList []net.IPNet, lbIPs []net.IP) []net.IPNet {
 	for _, lbIP := range lbIPs {
 		var toBeSplitted []net.IPNet
 		for i := len(filterList) - 1; i >= 0; i-- {
 			if filterList[i].Contains(lbIP) {
+				logger.Info("Identified load balancer IP in filtered CIDR. Splitting CIDR to remove IP.", "loadBalancerIP", lbIP.String(), "cidr", filterList[i].String())
 				toBeSplitted = append(toBeSplitted, filterList[i])
 				filterList = append(filterList[:i], filterList[i+1:]...)
 			}
