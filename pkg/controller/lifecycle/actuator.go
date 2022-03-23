@@ -8,6 +8,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
@@ -66,7 +67,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 	if a.serviceConfig.EgressFilter != nil {
 		blackholingEnabled = a.serviceConfig.EgressFilter.BlackholingEnabled
 		var err error
-		secretData, err = a.readFilterListSecretData(ctx)
+		secretData, err = a.readAndRestrictFilterListSecretData(ctx)
 		if err != nil {
 			return err
 		}
@@ -133,8 +134,69 @@ func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
 	return nil
 }
 
-func (a *actuator) readFilterListSecretData(ctx context.Context) (map[string][]byte, error) {
-	return a.provider.ReadSecretData(ctx)
+func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context) (map[string][]byte, error) {
+	secretData, err := a.provider.ReadSecretData(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if a.serviceConfig.EgressFilter.EnsureConnectivity == nil || len(a.serviceConfig.EgressFilter.EnsureConnectivity.SeedNamespaces) == 0 {
+		return secretData, err
+	}
+
+	seedLoadBalancerIPs, err := a.collectSeedLoadBalancersIPs(ctx, a.serviceConfig.EgressFilter.EnsureConnectivity.SeedNamespaces)
+	if err != nil {
+		return nil, err
+	}
+
+	filteredSecretData, err := filterSecretDataForIPs(a.logger, secretData, seedLoadBalancerIPs)
+	if err != nil {
+		return nil, err
+	}
+
+	modified := false
+	for _, key := range []string{constants.KeyIPV4List, constants.KeyIPV6List} {
+		if len(secretData[key]) != len(filteredSecretData[key]) {
+			modified = true
+			a.logger.Info(fmt.Sprintf("modified filterList %s: len changed from %d to %d", key, len(secretData[key]), len(filteredSecretData[key])))
+		}
+	}
+	if !modified {
+		a.logger.Info("filterList unmodified by seed load balancers")
+	}
+	return filteredSecretData, err
+}
+
+func (a *actuator) collectSeedLoadBalancersIPs(ctx context.Context, namespaces []string) ([]net.IP, error) {
+	var result []net.IP
+	var countLBs int
+	for _, ns := range namespaces {
+		list := &corev1.ServiceList{}
+		nsclient := client.NewNamespacedClient(a.client, ns)
+		err := nsclient.List(ctx, list)
+		if err != nil {
+			return nil, err
+		}
+		for _, svc := range list.Items {
+			if svc.Spec.Type == corev1.ServiceTypeLoadBalancer {
+				for _, ingress := range svc.Status.LoadBalancer.Ingress {
+					countLBs++
+					if ingress.IP != "" {
+						if ip := net.ParseIP(ingress.IP); ip != nil {
+							result = append(result, ip)
+						}
+					} else if ingress.Hostname != "" {
+						if ips, err := net.LookupIP(ingress.Hostname); err == nil {
+							result = append(result, ips...)
+						} else {
+							a.logger.Info("cannot lookup svc loadbalancer", "err", err)
+						}
+					}
+				}
+			}
+		}
+	}
+	a.logger.Info(fmt.Sprintf("found %d seed load balancers with %d IP addresses in %d namespaces", countLBs, len(result), len(namespaces)))
+	return result, nil
 }
 
 func (a *actuator) setupFilterListProvider() error {

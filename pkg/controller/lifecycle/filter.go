@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
 
 	"github.com/go-logr/logr"
 )
@@ -86,4 +87,97 @@ func convertToPlainYamlList(list []string) string {
 		sb.WriteString("\n")
 	}
 	return sb.String()
+}
+
+func ipNetListfromPlainYamlList(yaml string) []net.IPNet {
+	if strings.TrimSpace(yaml) == "[]" {
+		return nil
+	}
+	var result []net.IPNet
+	for _, s := range strings.Split(yaml, "\n") {
+		s = strings.Trim(s, "- ")
+		_, ipnet, err := net.ParseCIDR(s)
+		if err != nil || ipnet == nil {
+			continue
+		}
+		result = append(result, *ipnet)
+	}
+	return result
+}
+
+func filterSecretDataForIPs(logger logr.Logger, secretData map[string][]byte, lbIPs []net.IP) (map[string][]byte, error) {
+	filteredSecretData := map[string][]byte{}
+	for key, value := range secretData {
+		switch key {
+		case constants.KeyIPV4List:
+			ipV4List := ipNetListfromPlainYamlList(string(value))
+			ipV4List = filterIPNetListForIPs(logger, ipV4List, lbIPs)
+			strList := ipNetListToStringList(ipV4List)
+			value = []byte(convertToPlainYamlList(strList))
+		case constants.KeyIPV6List:
+			ipV6List := ipNetListfromPlainYamlList(string(value))
+			ipV6List = filterIPNetListForIPs(logger, ipV6List, lbIPs)
+			strList := ipNetListToStringList(ipV6List)
+			value = []byte(convertToPlainYamlList(strList))
+		}
+		filteredSecretData[key] = value
+	}
+	return filteredSecretData, nil
+}
+
+func filterIPNetListForIPs(logger logr.Logger, filterList []net.IPNet, lbIPs []net.IP) []net.IPNet {
+	for _, lbIP := range lbIPs {
+		var toBeSplitted []net.IPNet
+		for i := len(filterList) - 1; i >= 0; i-- {
+			if filterList[i].Contains(lbIP) {
+				logger.Info("Identified load balancer IP in filtered CIDR. Splitting CIDR to remove IP.", "loadBalancerIP", lbIP.String(), "cidr", filterList[i].String())
+				toBeSplitted = append(toBeSplitted, filterList[i])
+				filterList = append(filterList[:i], filterList[i+1:]...)
+			}
+		}
+		if len(toBeSplitted) > 0 {
+			for _, cidr := range toBeSplitted {
+				splitted := removeFromCIDR(cidr, lbIP)
+				filterList = append(filterList, splitted...)
+			}
+		}
+	}
+	return filterList
+}
+
+func ipNetListToStringList(filterList []net.IPNet) []string {
+	result := make([]string, len(filterList))
+	for i, v := range filterList {
+		result[i] = v.String()
+	}
+	return result
+}
+
+// removeFromCIDR removes a single IP from a CIDR and returns the remaining CIDRs
+func removeFromCIDR(cidr net.IPNet, ip net.IP) []net.IPNet {
+	if !cidr.Contains(ip) {
+		return []net.IPNet{cidr}
+	}
+
+	var result []net.IPNet
+	if x := ip.To4(); x != nil {
+		ip = x
+	}
+	n := len(ip)
+	ones, bits := cidr.Mask.Size()
+
+	for j := ones; j < bits; j++ {
+		m := net.CIDRMask(j, bits)
+		m1 := net.CIDRMask(j+1, bits)
+		out := make(net.IP, n)
+		for i := 0; i < n; i++ {
+			out[i] = (ip[i] ^ (m[i] ^ m1[i])) & m1[i]
+		}
+		subCIDR := net.IPNet{
+			IP:   out,
+			Mask: net.CIDRMask(j+1, bits),
+		}
+		result = append(result, subCIDR)
+	}
+	return result
 }
