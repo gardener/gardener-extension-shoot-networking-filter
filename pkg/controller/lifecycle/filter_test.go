@@ -9,16 +9,15 @@ import (
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
-	. "github.com/onsi/ginkgo"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	. "github.com/onsi/ginkgo/extensions/table"
+	"github.com/go-logr/logr"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Filter methods", func() {
 	var (
-		logger    = log.NullLogger{}
+		logger    = logr.Discard()
 		emptyList = []config.Filter{}
 		goodList  = []config.Filter{
 			{Network: "1.2.3.4/31", Policy: "BLOCK_ACCESS"},
