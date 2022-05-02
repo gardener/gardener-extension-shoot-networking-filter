@@ -10,9 +10,9 @@ import (
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/healthcheck"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/lifecycle"
+
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/util"
-
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	componentbaseconfig "k8s.io/component-base/config"
