@@ -132,6 +132,7 @@ func autoConvert_v1alpha1_EgressFilter_To_config_EgressFilter(in *EgressFilter, 
 	out.StaticFilterList = *(*[]config.Filter)(unsafe.Pointer(&in.StaticFilterList))
 	out.DownloaderConfig = (*config.DownloaderConfig)(unsafe.Pointer(in.DownloaderConfig))
 	out.EnsureConnectivity = (*config.EnsureConnectivity)(unsafe.Pointer(in.EnsureConnectivity))
+	out.PSPDisabled = (*bool)(unsafe.Pointer(in.PSPDisabled))
 	return nil
 }
 
@@ -146,6 +147,7 @@ func autoConvert_config_EgressFilter_To_v1alpha1_EgressFilter(in *config.EgressF
 	out.StaticFilterList = *(*[]Filter)(unsafe.Pointer(&in.StaticFilterList))
 	out.DownloaderConfig = (*DownloaderConfig)(unsafe.Pointer(in.DownloaderConfig))
 	out.EnsureConnectivity = (*EnsureConnectivity)(unsafe.Pointer(in.EnsureConnectivity))
+	out.PSPDisabled = (*bool)(unsafe.Pointer(in.PSPDisabled))
 	return nil
 }
 
