@@ -48,6 +48,9 @@ type EgressFilter struct {
 	// EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.
 	// +optional
 	EnsureConnectivity *EnsureConnectivity `json:"ensureConnectivity,omitempty"`
+
+	// PSPDisabled is a flag to disable pod security policy.
+	PSPDisabled *bool `json:"pspDisabled,omitempty"`
 }
 
 // FilterListProviderType
