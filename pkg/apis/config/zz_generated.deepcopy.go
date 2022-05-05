@@ -94,6 +94,11 @@ func (in *EgressFilter) DeepCopyInto(out *EgressFilter) {
 		*out = new(EnsureConnectivity)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.PSPDisabled != nil {
+		in, out := &in.PSPDisabled, &out.PSPDisabled
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

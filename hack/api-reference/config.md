@@ -216,6 +216,17 @@ EnsureConnectivity
 <p>EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>pspDisabled</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<p>PSPDisabled is a flag to disable pod security policy.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EnsureConnectivity">EnsureConnectivity
