@@ -10,7 +10,7 @@ COPY . .
 RUN make install
 
 ############# gardener-extension-shoot-networking-filter
-FROM alpine:3.15.0 AS gardener-extension-shoot-networking-filter
+FROM alpine:3.15.4 AS gardener-extension-shoot-networking-filter
 
 COPY charts /charts
 COPY --from=builder /go/bin/gardener-extension-shoot-networking-filter /gardener-extension-shoot-networking-filter
