@@ -10,7 +10,8 @@ COPY . .
 RUN make install
 
 ############# gardener-extension-shoot-networking-filter
-FROM alpine:3.15.4 AS gardener-extension-shoot-networking-filter
+FROM  gcr.io/distroless/static-debian11:nonroot AS gardener-extension-shoot-networking-filter
+WORKDIR /
 
 COPY charts /charts
 COPY --from=builder /go/bin/gardener-extension-shoot-networking-filter /gardener-extension-shoot-networking-filter
