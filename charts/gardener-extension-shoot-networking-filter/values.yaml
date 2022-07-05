@@ -11,13 +11,7 @@ image:
 serviceName: shoot-networking-filter
 replicaCount: 1
 
-resources:
-  requests:
-   cpu: "30m"
-   memory: "64Mi"
-  limits:
-   cpu: "50m"
-   memory: "128Mi"
+resources: {}
 
 controllers:
   lifecycle:
