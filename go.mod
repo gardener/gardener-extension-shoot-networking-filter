@@ -1,6 +1,6 @@
 module github.com/gardener/gardener-extension-shoot-networking-filter
 
-go 1.17
+go 1.18
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.2.0
@@ -149,7 +149,6 @@ replace (
 	k8s.io/client-go => k8s.io/client-go v0.23.3
 	k8s.io/code-generator => k8s.io/code-generator v0.23.3
 	k8s.io/component-base => k8s.io/component-base v0.23.3
-	k8s.io/helm => k8s.io/helm v2.13.1+incompatible
 )
 
 // workaround for https://github.com/gardener/hvpa-controller/issues/92, remove once it's fixed
