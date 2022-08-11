@@ -14,7 +14,10 @@ import (
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/imagevector"
+
+	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
+	gardencorev1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils"
@@ -77,6 +80,15 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		if err != nil {
 			return err
 		}
+	}
+
+	cluster, err := controller.GetCluster(ctx, a.client, ex.Namespace)
+	if err != nil {
+		return err
+	}
+
+	if gardencorev1beta1helper.IsPSPDisabled(cluster.Shoot) {
+		pspEnabled = false
 	}
 
 	shootResources, err := getShootResources(blackholingEnabled, pspEnabled, secretData)
