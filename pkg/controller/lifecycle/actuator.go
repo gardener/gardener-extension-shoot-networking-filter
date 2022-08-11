@@ -60,7 +60,7 @@ type actuator struct {
 }
 
 // Reconcile the Extension resource.
-func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extension) error {
+func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	blackholingEnabled := true
 	pspEnabled := true
 	secretData := map[string][]byte{
@@ -89,7 +89,7 @@ func (a *actuator) Reconcile(ctx context.Context, ex *extensionsv1alpha1.Extensi
 }
 
 // Delete the Extension resource.
-func (a *actuator) Delete(ctx context.Context, ex *extensionsv1alpha1.Extension) error {
+func (a *actuator) Delete(ctx context.Context, _ logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	namespace := ex.GetNamespace()
 	twoMinutes := 2 * time.Minute
 
@@ -108,18 +108,18 @@ func (a *actuator) Delete(ctx context.Context, ex *extensionsv1alpha1.Extension)
 }
 
 // Restore the Extension resource.
-func (a *actuator) Restore(ctx context.Context, ex *extensionsv1alpha1.Extension) error {
-	return a.Reconcile(ctx, ex)
+func (a *actuator) Restore(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
+	return a.Reconcile(ctx, log, ex)
 }
 
 // Migrate the Extension resource.
-func (a *actuator) Migrate(ctx context.Context, ex *extensionsv1alpha1.Extension) error {
+func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	// Keep objects for shoot managed resources so that they are not deleted from the shoot during the migration
 	if err := managedresources.SetKeepObjects(ctx, a.client, ex.GetNamespace(), constants.ManagedResourceNamesShoot, true); err != nil {
 		return err
 	}
 
-	return a.Delete(ctx, ex)
+	return a.Delete(ctx, log, ex)
 }
 
 // InjectConfig injects the rest config to this actuator.
