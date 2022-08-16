@@ -68,7 +68,7 @@ check-generate:
 
 .PHONY: check-docforge
 check-docforge: $(DOCFORGE)
-	@./hack/check-docforge.sh
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-docforge.sh $(REPO_ROOT) $(REPO_ROOT)/.docforge/manifest.yaml ".docforge/;docs/" "gardener-extension-shoot-networking-filter" false
 
 .PHONY: check
 check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
