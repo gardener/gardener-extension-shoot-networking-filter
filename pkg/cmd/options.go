@@ -7,7 +7,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 
 	apisconfig "github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
@@ -57,7 +57,7 @@ func (o *PolicyFilterOptions) Complete() error {
 	if o.ConfigLocation == "" {
 		return errors.New("config location is not set")
 	}
-	data, err := ioutil.ReadFile(o.ConfigLocation)
+	data, err := os.ReadFile(o.ConfigLocation)
 	if err != nil {
 		return err
 	}
@@ -72,17 +72,17 @@ func (o *PolicyFilterOptions) Complete() error {
 	if config.EgressFilter != nil && config.EgressFilter.DownloaderConfig != nil && o.OAuth2ConfigDir != "" {
 		secretData := &apisconfig.OAuth2Secret{}
 		filename := path.Join(o.OAuth2ConfigDir, constants.KeyClientID)
-		clientID, err := ioutil.ReadFile(filename)
+		clientID, err := os.ReadFile(filename)
 		if err != nil {
 			return fmt.Errorf("cannot read clientID from %s: %w", filename, err)
 		}
 		secretData.ClientID = string(clientID)
-		clientSecret, err := ioutil.ReadFile(path.Join(o.OAuth2ConfigDir, constants.KeyClientSecret))
+		clientSecret, err := os.ReadFile(path.Join(o.OAuth2ConfigDir, constants.KeyClientSecret))
 		if err == nil {
 			secretData.ClientSecret = string(clientSecret)
 		}
-		secretData.ClientCert, _ = ioutil.ReadFile(path.Join(o.OAuth2ConfigDir, constants.KeyClientCert))
-		secretData.ClientCertKey, _ = ioutil.ReadFile(path.Join(o.OAuth2ConfigDir, constants.KeyClientCertKey))
+		secretData.ClientCert, _ = os.ReadFile(path.Join(o.OAuth2ConfigDir, constants.KeyClientCert))
+		secretData.ClientCertKey, _ = os.ReadFile(path.Join(o.OAuth2ConfigDir, constants.KeyClientCertKey))
 		oauth2Secret = secretData
 	}
 

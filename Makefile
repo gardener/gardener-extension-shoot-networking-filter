@@ -15,6 +15,7 @@ IGNORE_OPERATION_ANNOTATION := true
 
 
 TOOLS_DIR := $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools
+GOLANGCI_LINT_VERSION := v1.49.0
 include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
 
 .PHONY: start
