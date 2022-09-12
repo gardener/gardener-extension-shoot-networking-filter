@@ -15,6 +15,7 @@ import (
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/imagevector"
 
+	"github.com/Masterminds/semver"
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	gardencorev1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
@@ -22,6 +23,7 @@ import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils"
 	managedresources "github.com/gardener/gardener/pkg/utils/managedresources"
+	versionutils "github.com/gardener/gardener/pkg/utils/version"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -91,7 +93,12 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		pspEnabled = false
 	}
 
-	shootResources, err := getShootResources(blackholingEnabled, pspEnabled, secretData)
+	k8sVersion, err := semver.NewVersion(cluster.Shoot.Spec.Kubernetes.Version)
+	if err != nil {
+		return err
+	}
+
+	shootResources, err := getShootResources(blackholingEnabled, pspEnabled, secretData, k8sVersion)
 	if err != nil {
 		return err
 	}
@@ -230,7 +237,7 @@ func (a *actuator) setupFilterListProvider() error {
 	return a.provider.Setup()
 }
 
-func getShootResources(blackholingEnabled, pspEnabled bool, secretData map[string][]byte) (map[string][]byte, error) {
+func getShootResources(blackholingEnabled, pspEnabled bool, secretData map[string][]byte, k8sVersion *semver.Version) (map[string][]byte, error) {
 	shootRegistry := managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
 
 	if secretData == nil {
@@ -264,7 +271,7 @@ func getShootResources(blackholingEnabled, pspEnabled bool, secretData map[strin
 		objects = append(objects, pspObjects...)
 	}
 
-	daemonset, err := buildDaemonset(checksumEgressFilter, blackholingEnabled, serviceAccountName)
+	daemonset, err := buildDaemonset(checksumEgressFilter, blackholingEnabled, serviceAccountName, k8sVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +284,7 @@ func getShootResources(blackholingEnabled, pspEnabled bool, secretData map[strin
 	return shootResources, nil
 }
 
-func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, serviceAccountName string) (client.Object, error) {
+func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, serviceAccountName string, k8sVersion *semver.Version) (client.Object, error) {
 	var (
 		requestCPU, _          = resource.ParseQuantity("50m")
 		limitCPU, _            = resource.ParseQuantity("100m")
@@ -301,7 +308,7 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, servic
 		return nil, fmt.Errorf("failed to find image version for %s: %v", imageName, err)
 	}
 
-	return &appsv1.DaemonSet{
+	ds := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.ApplicationName,
 			Namespace: constants.NamespaceKubeSystem,
@@ -384,7 +391,19 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, servic
 				},
 			},
 		},
-	}, nil
+	}
+
+	if versionutils.ConstraintK8sGreaterEqual119.Check(k8sVersion) {
+		if ds.Spec.Template.Spec.SecurityContext == nil {
+			ds.Spec.Template.Spec.SecurityContext = &corev1.PodSecurityContext{}
+		}
+
+		ds.Spec.Template.Spec.SecurityContext.SeccompProfile = &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		}
+	}
+
+	return ds, nil
 }
 
 func buildPodSecurityPolicy(serviceAccountName string) ([]client.Object, error) {
@@ -431,6 +450,10 @@ func buildPodSecurityPolicy(serviceAccountName string) ([]client.Object, error) 
 	psp := &policyv1beta1.PodSecurityPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: resourceName,
+			Annotations: map[string]string{
+				"seccomp.security.alpha.kubernetes.io/defaultProfileName":  "runtime/default",
+				"seccomp.security.alpha.kubernetes.io/allowedProfileNames": "runtime/default",
+			},
 		},
 		Spec: policyv1beta1.PodSecurityPolicySpec{
 			Privileged:               false,
