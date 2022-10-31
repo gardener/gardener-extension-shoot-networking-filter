@@ -287,7 +287,6 @@ func getShootResources(blackholingEnabled, pspEnabled bool, secretData map[strin
 func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, serviceAccountName string, k8sVersion *semver.Version) (client.Object, error) {
 	var (
 		requestCPU, _          = resource.ParseQuantity("50m")
-		limitCPU, _            = resource.ParseQuantity("100m")
 		requestMemory, _       = resource.ParseQuantity("64Mi")
 		limitMemory, _         = resource.ParseQuantity("256Mi")
 		defaultMode      int32 = 0400
@@ -360,7 +359,6 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, servic
 								corev1.ResourceMemory: requestMemory,
 							},
 							Limits: corev1.ResourceList{
-								corev1.ResourceCPU:    limitCPU,
 								corev1.ResourceMemory: limitMemory,
 							},
 						},
