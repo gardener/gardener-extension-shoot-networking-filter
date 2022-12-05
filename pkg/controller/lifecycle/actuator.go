@@ -443,6 +443,7 @@ func buildPodSecurityPolicy(serviceAccountName string) ([]client.Object, error) 
 			Name:      serviceAccountName,
 			Namespace: constants.NamespaceKubeSystem,
 		},
+		AutomountServiceAccountToken: pointer.Bool(false),
 	}
 	t := true
 	psp := &policyv1beta1.PodSecurityPolicy{
