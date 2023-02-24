@@ -14,16 +14,16 @@ import (
 	"os"
 	"time"
 
+	"github.com/gardener/gardener/pkg/controllerutils"
+	"github.com/go-logr/logr"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/metrics"
-	"github.com/gardener/gardener/pkg/controllerutils"
-	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (

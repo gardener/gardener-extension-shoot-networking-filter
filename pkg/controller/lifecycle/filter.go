@@ -8,10 +8,10 @@ import (
 	"net"
 	"strings"
 
+	"github.com/go-logr/logr"
+
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
-
-	"github.com/go-logr/logr"
 )
 
 var privateIPv4Ranges []net.IPNet
