@@ -15,7 +15,6 @@ IGNORE_OPERATION_ANNOTATION := true
 
 
 TOOLS_DIR := $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools
-GOLANGCI_LINT_VERSION := v1.49.0
 include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
 
 .PHONY: start
@@ -80,9 +79,10 @@ check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
 generate: $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS) $(HELM)
 	@GO111MODULE=off hack/update-codegen.sh --parallel
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/generate.sh ./charts/... ./cmd/... ./pkg/... ./test/...
+	@$(MAKE) format
 
 .PHONY: format
-format: $(GOIMPORTS)
+format: $(GOIMPORTS) $(GOIMPORTSREVISER)
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/format.sh ./cmd ./pkg ./test
 
 .PHONY: test

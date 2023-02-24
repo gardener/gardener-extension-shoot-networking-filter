@@ -7,12 +7,12 @@ package lifecycle
 import (
 	"net"
 
-	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
-	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
-
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
 )
 
 var _ = Describe("Filter methods", func() {

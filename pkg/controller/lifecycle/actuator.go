@@ -11,10 +11,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
-	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
-	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/imagevector"
-
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	gardencorev1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
@@ -36,6 +32,10 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/imagevector"
 )
 
 const (
@@ -97,7 +97,7 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 	}
 
 	namespace := ex.GetNamespace()
-	return managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, false, shootResources)
+	return managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, "gardener-extension-shoot-networking-filter", false, shootResources)
 }
 
 // Delete the Extension resource.

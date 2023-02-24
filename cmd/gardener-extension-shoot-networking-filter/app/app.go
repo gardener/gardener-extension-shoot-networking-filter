@@ -8,9 +8,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/healthcheck"
-	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/lifecycle"
-
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	"github.com/gardener/gardener/extensions/pkg/util"
@@ -20,6 +17,9 @@ import (
 	"k8s.io/component-base/version/verflag"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/healthcheck"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/lifecycle"
 )
 
 // NewServiceControllerCommand creates a new command that is used to start the networking policy filter controller.
