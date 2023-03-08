@@ -41,6 +41,7 @@ metrics:
   ## enable metrics scraping
   ##
   enableScraping: true
+  port: 8080
 
 egressFilter:
   blackholingEnabled: true
