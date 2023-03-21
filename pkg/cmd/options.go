@@ -12,6 +12,7 @@ import (
 
 	healthcheckconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/controller/cmd"
+	extensionshealthcheckcontroller "github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
 	extensionsheartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -22,6 +23,7 @@ import (
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config/v1alpha1"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
 	controllerconfig "github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/config"
+	healthcheckcontroller "github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/healthcheck"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/lifecycle"
 )
 
@@ -121,6 +123,7 @@ func (c *PolicyFilterConfig) ApplyHealthCheckConfig(config *healthcheckconfig.He
 func ControllerSwitches() *cmd.SwitchOptions {
 	return cmd.NewSwitchOptions(
 		cmd.Switch(lifecycle.Name, lifecycle.AddToManager),
+		cmd.Switch(extensionshealthcheckcontroller.ControllerName, healthcheckcontroller.AddToManager),
 		cmd.Switch(extensionsheartbeatcontroller.ControllerName, extensionsheartbeatcontroller.AddToManager),
 	)
 }
