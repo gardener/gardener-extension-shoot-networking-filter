@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config/v1alpha1"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/imagevector"
 )
@@ -57,26 +58,54 @@ type actuator struct {
 	config        *rest.Config
 	decoder       runtime.Decoder
 	serviceConfig config.Configuration
+	shootConfig   *v1alpha1.Configuration
 	oauth2secret  *config.OAuth2Secret
 	provider      filterListProvider
 	logger        logr.Logger
+	scheme        *runtime.Scheme
 }
 
 // Reconcile the Extension resource.
 func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	blackholingEnabled := true
+	staticFilterList := []config.Filter{}
 	pspEnabled := true
 	secretData := map[string][]byte{
 		constants.KeyIPV4List: []byte("[]"),
 		constants.KeyIPV6List: []byte("[]"),
 	}
+
+	a.shootConfig = &v1alpha1.Configuration{}
+	if ex.Spec.ProviderConfig != nil {
+		if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, a.shootConfig); err != nil {
+			return fmt.Errorf("failed to decode provider config: %w", err)
+		}
+	}
+
+	internalShootConfig := &config.Configuration{}
+	if err := a.scheme.Convert(a.shootConfig, internalShootConfig, nil); err != nil {
+		return fmt.Errorf("failed to convert shoot config: %w", err)
+	}
+
 	if a.serviceConfig.EgressFilter != nil {
 		blackholingEnabled = a.serviceConfig.EgressFilter.BlackholingEnabled
 		if a.serviceConfig.EgressFilter.PSPDisabled != nil {
 			pspEnabled = !*a.serviceConfig.EgressFilter.PSPDisabled
 		}
+
+		if internalShootConfig.EgressFilter != nil {
+			blackholingEnabled = internalShootConfig.EgressFilter.BlackholingEnabled
+			staticFilterList = internalShootConfig.EgressFilter.StaticFilterList
+		}
+
+		staticProvider, ok := a.provider.(*staticFilterListProvider)
+		if ok {
+			staticProvider.filterList = a.serviceConfig.EgressFilter.StaticFilterList
+			a.provider.Setup()
+		}
+
 		var err error
-		secretData, err = a.readAndRestrictFilterListSecretData(ctx)
+		secretData, err = a.readAndRestrictFilterListSecretData(ctx, staticFilterList)
 		if err != nil {
 			return err
 		}
@@ -148,11 +177,12 @@ func (a *actuator) InjectClient(client client.Client) error {
 
 // InjectScheme injects the given scheme into the reconciler.
 func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
+	a.scheme = scheme
 	a.decoder = serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
 	return nil
 }
 
-func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context) (map[string][]byte, error) {
+func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, filterList []config.Filter) (map[string][]byte, error) {
 	secretData, err := a.provider.ReadSecretData(ctx)
 	if err != nil {
 		return nil, err
@@ -162,6 +192,11 @@ func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context) (map
 	}
 
 	seedLoadBalancerIPs, err := a.collectSeedLoadBalancersIPs(ctx, a.serviceConfig.EgressFilter.EnsureConnectivity.SeedNamespaces)
+	if err != nil {
+		return nil, err
+	}
+
+	secretData, err = appendStaticIPs(a.logger, secretData, filterList)
 	if err != nil {
 		return nil, err
 	}
@@ -227,6 +262,7 @@ func (a *actuator) setupFilterListProvider() error {
 	default:
 		return fmt.Errorf("unexpected FilterListProviderType: %s", a.serviceConfig.EgressFilter.FilterListProviderType)
 	}
+	a.logger.Info("Update filter list")
 	return a.provider.Setup()
 }
 

@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	filterinstall "github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config/install"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/healthcheck"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/lifecycle"
 )
@@ -72,6 +73,10 @@ func (o *Options) run(ctx context.Context) error {
 	}
 
 	if err := extensionscontroller.AddToScheme(mgr.GetScheme()); err != nil {
+		return fmt.Errorf("could not update manager scheme: %s", err)
+	}
+
+	if err := filterinstall.AddToScheme(mgr.GetScheme()); err != nil {
 		return fmt.Errorf("could not update manager scheme: %s", err)
 	}
 

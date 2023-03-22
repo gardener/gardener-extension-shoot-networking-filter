@@ -43,6 +43,11 @@ var _ = Describe("Filter methods", func() {
 			{Network: "fe80::/11", Policy: "BLOCK_ACCESS"},
 			{Network: "fc00::/7", Policy: "BLOCK_ACCESS"},
 		}
+		appendList = []config.Filter{
+			{Network: "11.1.2.3/32", Policy: "BLOCK_ACCESS"},
+			{Network: "12.5.6.7/32", Policy: "BLOCK_ACCESS"},
+			{Network: "2001:db8::ff00:42:8328/128", Policy: "BLOCK_ACCESS"},
+		}
 	)
 
 	DescribeTable("#generateEgressFilterValues", func(filterList []config.Filter, expected_ipv4List, expected_ipv6List []string) {
@@ -138,6 +143,23 @@ var _ = Describe("Filter methods", func() {
 - 2001:db8::ff00:42:8328/128
 `,
 		}
+		expected_append1 = map[string]string{
+			constants.KeyIPV4List: `- 11.1.2.3/32
+- 12.5.6.7/32
+`,
+			constants.KeyIPV6List: `- 2001:db8::ff00:42:8328/128
+`,
+		}
+		expected_append2 = map[string]string{
+			constants.KeyIPV4List: `- 1.2.3.4/30
+- 1.2.3.8/30
+- 11.1.2.3/32
+- 12.5.6.7/32
+`,
+			constants.KeyIPV6List: `- 2001::2/127
+- 2001:db8::ff00:42:8328/128
+`,
+		}
 		lbIPs1 = []string{"1.2.3.4", "1.2.3.5", "1.2.3.7", "5.6.7.8", "2001:db8::ff00:42:8329"}
 	)
 	DescribeTable("#filterSecretDataForIPs", func(input map[string]string, lbIPs []string, expected map[string]string) {
@@ -164,4 +186,23 @@ var _ = Describe("Filter methods", func() {
 		Entry("input1", input1, lbIPs1, expected1),
 		Entry("input2", input2, lbIPs1, expected2),
 	)
+
+	DescribeTable("#appendStaticIPs", func(input map[string]string, staticIPs []config.Filter, expected map[string]string) {
+		in := map[string][]byte{}
+		for k, v := range input {
+			in[k] = []byte(v)
+		}
+		actual, err := appendStaticIPs(logger, in, staticIPs)
+		Expect(err).To(BeNil())
+		out := map[string]string{}
+		for k, v := range actual {
+			out[k] = string(v)
+		}
+		Expect(out).To(Equal(expected))
+	},
+		Entry("empty", empty, nil, empty),
+		Entry("empty", empty, appendList, expected_append1),
+		Entry("input1", input1, appendList, expected_append2),
+	)
+
 })

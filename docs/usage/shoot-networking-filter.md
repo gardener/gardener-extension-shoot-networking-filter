@@ -31,3 +31,44 @@ spec:
 ...
 ```
 
+### Ingress Filtering
+
+By default, the networking filter only filters egress traffic. However, if you enable blackholing, incoming traffic will also be blocked.
+You can enable blackholing on a per-shoot basis.
+
+```yaml
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+...
+spec:
+  extensions:
+    - type: shoot-networking-filter
+      egressFilter:
+        blackholingEnabled: true
+...
+```
+Please note that if you disable `blackholing` in an existing shoot, the associated blackhole routes will not be removed automatically. 
+To remove these routes, you can either replace the affected nodes or delete the routes manually.
+
+### Custom IP 
+
+It is possible to add custom IP addresses to the network filter. This can be useful for testing purposes.
+
+```yaml
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+...
+spec:
+  extensions:
+    - type: shoot-networking-filter
+      egressFilter:
+        staticFilterList:
+          - network: 1.2.3.4/31
+            policy: BLOCK_ACCESS
+          - network: 5.6.7.8/32
+            policy: BLOCK_ACCESS
+          - network: ::2/128
+            policy: BLOCK_ACCESS
+...
+```
+

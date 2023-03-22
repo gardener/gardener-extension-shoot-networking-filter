@@ -104,7 +104,12 @@ func newStaticFilterListProvider(ctx context.Context, client client.Client, logg
 }
 
 func (p *staticFilterListProvider) Setup() error {
-	return p.createOrUpdateFilterListSecret(p.ctx, p.filterList)
+	err := p.createOrUpdateFilterListSecret(p.ctx, p.filterList)
+	if err != nil {
+		p.logger.Info("secret update failed", "error", err)
+		return err
+	}
+	return nil
 }
 
 type downloaderFilterListProvider struct {
