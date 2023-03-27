@@ -101,7 +101,10 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		staticProvider, ok := a.provider.(*staticFilterListProvider)
 		if ok {
 			staticProvider.filterList = a.serviceConfig.EgressFilter.StaticFilterList
-			a.provider.Setup()
+			err := a.provider.Setup()
+			if err != nil {
+				return err
+			}
 		}
 
 		var err error
