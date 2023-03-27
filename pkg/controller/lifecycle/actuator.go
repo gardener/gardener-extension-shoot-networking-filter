@@ -58,7 +58,6 @@ type actuator struct {
 	config        *rest.Config
 	decoder       runtime.Decoder
 	serviceConfig config.Configuration
-	shootConfig   *v1alpha1.Configuration
 	oauth2secret  *config.OAuth2Secret
 	provider      filterListProvider
 	logger        logr.Logger
@@ -75,15 +74,15 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		constants.KeyIPV6List: []byte("[]"),
 	}
 
-	a.shootConfig = &v1alpha1.Configuration{}
+	shootConfig := &v1alpha1.Configuration{}
 	if ex.Spec.ProviderConfig != nil {
-		if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, a.shootConfig); err != nil {
+		if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, shootConfig); err != nil {
 			return fmt.Errorf("failed to decode provider config: %w", err)
 		}
 	}
 
 	internalShootConfig := &config.Configuration{}
-	if err := a.scheme.Convert(a.shootConfig, internalShootConfig, nil); err != nil {
+	if err := a.scheme.Convert(shootConfig, internalShootConfig, nil); err != nil {
 		return fmt.Errorf("failed to convert shoot config: %w", err)
 	}
 

@@ -47,6 +47,11 @@ spec:
         blackholingEnabled: true
 ...
 ```
+Ingress traffic can only be blocked, if the source IP address is preserved.
+In order to preserve the source IP address of a client when accessing a Service via a load balancer,
+you can use the "externalTrafficPolicy" setting in the Service specification. It may also require additional configuration of the load balancer
+depending on the infrastructure provider. Please check the documentation and capabilities of the infrastructure provider's load balancer to ensure that source IP preservation is supported.
+
 Please note that if you disable `blackholing` in an existing shoot, the associated blackhole routes will not be removed automatically. 
 To remove these routes, you can either replace the affected nodes or delete the routes manually.
 
