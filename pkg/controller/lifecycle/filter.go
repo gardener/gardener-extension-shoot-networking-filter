@@ -105,6 +105,29 @@ func ipNetListfromPlainYamlList(yaml string) []net.IPNet {
 	return result
 }
 
+func appendStaticIPs(logger logr.Logger, secretData map[string][]byte, filterList []config.Filter) (map[string][]byte, error) {
+	newSecretData := map[string][]byte{}
+
+	staticIPv4List, staticIPv6List, err := generateEgressFilterValues(filterList, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	staticIPv4Data := ipNetListfromPlainYamlList(convertToPlainYamlList(staticIPv4List))
+	staticIPv6Data := ipNetListfromPlainYamlList(convertToPlainYamlList(staticIPv6List))
+
+	ipV4List := ipNetListfromPlainYamlList(string(secretData[constants.KeyIPV4List]))
+	ipV6List := ipNetListfromPlainYamlList(string(secretData[constants.KeyIPV6List]))
+
+	ipV4List = append(ipV4List, staticIPv4Data...)
+	ipV6List = append(ipV6List, staticIPv6Data...)
+
+	newSecretData[constants.KeyIPV4List] = []byte(convertToPlainYamlList(ipNetListToStringList(ipV4List)))
+	newSecretData[constants.KeyIPV6List] = []byte(convertToPlainYamlList(ipNetListToStringList(ipV6List)))
+
+	return newSecretData, nil
+}
+
 func filterSecretDataForIPs(logger logr.Logger, secretData map[string][]byte, lbIPs []net.IP) (map[string][]byte, error) {
 	filteredSecretData := map[string][]byte{}
 	for key, value := range secretData {
