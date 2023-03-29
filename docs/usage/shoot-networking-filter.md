@@ -31,7 +31,7 @@ spec:
 ...
 ```
 
-### Ingress Filtering
+## Ingress Filtering
 
 By default, the networking filter only filters egress traffic. However, if you enable blackholing, incoming traffic will also be blocked.
 You can enable blackholing on a per-shoot basis.
@@ -55,7 +55,7 @@ On OpenStack, load balancers don't preserve the source address.
 Please note that if you disable `blackholing` in an existing shoot, the associated blackhole routes will not be removed automatically. 
 To remove these routes, you can either replace the affected nodes or delete the routes manually.
 
-### Custom IP 
+## Custom IP 
 
 It is possible to add custom IP addresses to the network filter. This can be useful for testing purposes.
 
