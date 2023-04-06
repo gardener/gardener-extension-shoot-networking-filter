@@ -43,8 +43,9 @@ kind: Shoot
 spec:
   extensions:
     - type: shoot-networking-filter
-      egressFilter:
-        blackholingEnabled: true
+      providerConfig:
+        egressFilter:
+          blackholingEnabled: true
 ...
 ```
 Ingress traffic can only be blocked by blackhole routing, if the source IP address is preserved. On Azure, GCP and AliCloud this works by default.
@@ -66,8 +67,9 @@ kind: Shoot
 spec:
   extensions:
     - type: shoot-networking-filter
-      egressFilter:
-        staticFilterList:
+      providerConfig:
+        egressFilter:
+          staticFilterList:
           - network: 1.2.3.4/31
             policy: BLOCK_ACCESS
           - network: 5.6.7.8/32
