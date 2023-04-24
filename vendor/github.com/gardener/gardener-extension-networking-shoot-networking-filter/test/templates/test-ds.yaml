@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+    name: host-network
+    labels:
+      app: host-network
+spec:
+spec:
+  selector:
+    matchLabels:
+      app: host-network
+  template:
+    metadata:
+      labels:
+        app: host-network
+    spec:
+      hostNetwork: true
+      containers:
+      - name: host-network-test-connectivity
+        image: "ubuntu"
+        command: 
+        - /bin/bash
+        - -c
+        - |
+          apt-get update && apt-get install -y curl iputils-ping; /script/network-test.sh
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: networking-test
+          mountPath: /script
+        - name: dmesg-volume
+          mountPath: /var/log/dmesg
+      volumes:
+      - name: networking-test
+        configMap:
+          defaultMode: 511
+          name: network-test
+      - name: dmesg-volume
+        hostPath:
+          path: /dev/kmsg
+---

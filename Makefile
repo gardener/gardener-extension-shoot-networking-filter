@@ -14,8 +14,12 @@ LEADER_ELECTION             := false
 IGNORE_OPERATION_ANNOTATION := true
 
 
-TOOLS_DIR := $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools
-include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
+#########################################
+# Tools                                 #
+#########################################
+
+TOOLS_DIR := hack/tools
+include vendor/github.com/gardener/gardener/hack/tools.mk
 
 .PHONY: start
 start:
@@ -92,7 +96,7 @@ test:
 .PHONY: test-cov
 test-cov:
 	@SKIP_FETCH_TOOLS=1 $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test-cover.sh ./cmd/... ./pkg/...
-
+	
 .PHONY: test-clean
 test-clean:
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test-cover-clean.sh
@@ -102,3 +106,7 @@ verify: check check-docforge format test
 
 .PHONY: verify-extended
 verify-extended: check-generate check check-docforge format test test-cov test-clean
+
+.PHONY: test-e2e-local
+test-e2e-local: $(KIND) $(YQ) $(GINKGO)
+	@$(REPO_ROOT)/hack/test-e2e-provider-local.sh --procs=3
