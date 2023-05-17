@@ -5,7 +5,6 @@ go 1.20
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/gardener/gardener v1.66.1
-	github.com/gardener/gardener-extension-networking-shoot-networking-filter v0.0.0-00010101000000-000000000000
 	github.com/go-logr/logr v1.2.3
 	github.com/golang/mock v1.6.0
 	github.com/onsi/ginkgo/v2 v2.8.3
@@ -38,6 +37,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
+	github.com/frankban/quicktest v1.14.5 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gardener/etcd-druid v0.15.3 // indirect
 	github.com/gardener/hvpa-controller/api v0.5.0 // indirect
@@ -67,7 +67,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kubernetes-csi/external-snapshotter/v2 v2.1.4 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
@@ -138,5 +137,3 @@ require (
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.26.1
-
-replace github.com/gardener/gardener-extension-networking-shoot-networking-filter => /Users/d046309/go/src/github.com/gardener/gardener-extension-shoot-networking-filter
