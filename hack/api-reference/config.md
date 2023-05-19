@@ -168,7 +168,7 @@ Kubernetes meta/v1.Duration
 </em>
 </td>
 <td>
-<p>SleepDuration is the time interval between policy updated</p>
+<p>SleepDuration is the time interval between policy updates.</p>
 </td>
 </tr>
 <tr>

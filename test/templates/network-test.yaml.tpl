@@ -57,7 +57,7 @@ data:
     old_msg=$(iptables-legacy -n  -t mangle -v -L POLICY_LOGGING | awk 'NR == 3 {print $1}')
     nc -z -w 3 $BLOCKED_IP 443
     if [ $? -eq 0 ]; then
-      echo "ERROR: connection to $BLOCKED_IP should be blocked."
+      echo "ERROR: Connection to $BLOCKED_IP should be blocked."
       exit 1
     fi
     new_msg=$(iptables-legacy -n  -t mangle -v -L POLICY_LOGGING | awk 'NR == 3 {print $1}')

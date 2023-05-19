@@ -27,7 +27,7 @@ type EgressFilter struct {
 	// BlackholingEnabled is a flag to set blackholing or firewall approach.
 	BlackholingEnabled bool
 
-	// SleepDuration is the time interval between policy updated
+	// SleepDuration is the time interval between policy updates.
 	SleepDuration *metav1.Duration
 
 	// FilterListProviderType specifies how the filter list is retrieved.

@@ -37,7 +37,6 @@ mkdir -p $repo_root/tmp
 cp -f $repo_root/example/controller-registration.yaml $repo_root/tmp/controller-registration.yaml
 yq -i e "(select (.providerConfig.values.image) | .providerConfig.values.image.tag) |= \"$version\"" $repo_root/tmp/controller-registration.yaml
 yq -i e '(select (.providerConfig.values.image) | .providerConfig.values.image.repository) |= "docker.io/library/shoot-networking-filter-local"' $repo_root/tmp/controller-registration.yaml
-yq -i e '(select (.providerConfig.values) | .providerConfig.values.imageVectorOverwrite) |= "images:\n- name: egress-filter\n  repository: axel7born/egress-filter\n  tag: 0.12.0-dev\n"' $repo_root/tmp/controller-registration.yaml
 
 kubectl apply -f "$repo_root/tmp/controller-registration.yaml"
 
