@@ -31,8 +31,7 @@ metadata:
 spec:
 ```
 
-When an extension resource is reconciled, the extension controller will create a daemonset `egress-filter-applier` on the shoot containing either
-a [blackholer](https://github.com/gardener/egress-filter-refresher/tree/master/blackholer) or [firewaller](https://github.com/gardener/egress-filter-refresher/tree/master/firewaller) container.
+When an extension resource is reconciled, the extension controller will create a daemonset `egress-filter-applier` on the shoot containing a [Dockerfile](https://github.com/gardener/egress-filter-refresher/blob/master/Dockerfile) container.
 
 
 Please note, this extension controller relies on the [Gardener-Resource-Manager](https://github.com/gardener/gardener/blob/master/docs/concepts/resource-manager.md) to deploy k8s resources to seed and shoot clusters.
