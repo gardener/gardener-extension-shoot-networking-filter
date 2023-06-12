@@ -28,6 +28,9 @@ import (
 )
 
 const (
+	// This is the ip address of example.org
+	// It should be stable enough. In case it get's unreachable the test will not fail and we still have
+	// the iptables rules count proving that the connection was blocked.
 	blockAddress = "93.184.216.34"
 )
 

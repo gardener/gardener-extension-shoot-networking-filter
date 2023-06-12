@@ -18,8 +18,8 @@ IGNORE_OPERATION_ANNOTATION := true
 # Tools                                 #
 #########################################
 
-TOOLS_DIR := hack/tools
-include vendor/github.com/gardener/gardener/hack/tools.mk
+TOOLS_DIR := $(REPO_ROOT)/hack/tools
+include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
 
 .PHONY: start
 start:
@@ -96,7 +96,7 @@ test:
 .PHONY: test-cov
 test-cov:
 	@SKIP_FETCH_TOOLS=1 $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test-cover.sh ./cmd/... ./pkg/...
-	
+
 .PHONY: test-clean
 test-clean:
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test-cover-clean.sh
