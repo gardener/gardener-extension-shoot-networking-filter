@@ -9,6 +9,7 @@ import (
 	_ "embed"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
@@ -67,6 +68,7 @@ type actuator struct {
 // Reconcile the Extension resource.
 func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	blackholingEnabled := true
+	sleepDuration := "1h"
 	staticFilterList := []config.Filter{}
 	pspEnabled := true
 	secretData := map[string][]byte{
@@ -90,6 +92,9 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		blackholingEnabled = a.serviceConfig.EgressFilter.BlackholingEnabled
 		if a.serviceConfig.EgressFilter.PSPDisabled != nil {
 			pspEnabled = !*a.serviceConfig.EgressFilter.PSPDisabled
+		}
+		if a.serviceConfig.EgressFilter.SleepDuration != nil {
+			sleepDuration = a.serviceConfig.EgressFilter.SleepDuration.Duration.String()
 		}
 
 		if internalShootConfig.EgressFilter != nil {
@@ -122,7 +127,7 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		pspEnabled = false
 	}
 
-	shootResources, err := getShootResources(blackholingEnabled, pspEnabled, secretData)
+	shootResources, err := getShootResources(blackholingEnabled, pspEnabled, sleepDuration, secretData)
 	if err != nil {
 		return err
 	}
@@ -268,7 +273,7 @@ func (a *actuator) setupFilterListProvider() error {
 	return a.provider.Setup()
 }
 
-func getShootResources(blackholingEnabled, pspEnabled bool, secretData map[string][]byte) (map[string][]byte, error) {
+func getShootResources(blackholingEnabled, pspEnabled bool, sleepDuration string, secretData map[string][]byte) (map[string][]byte, error) {
 	shootRegistry := managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
 
 	if secretData == nil {
@@ -302,7 +307,7 @@ func getShootResources(blackholingEnabled, pspEnabled bool, secretData map[strin
 		objects = append(objects, pspObjects...)
 	}
 
-	daemonset, err := buildDaemonset(checksumEgressFilter, blackholingEnabled, serviceAccountName)
+	daemonset, err := buildDaemonset(checksumEgressFilter, blackholingEnabled, sleepDuration, serviceAccountName)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +320,7 @@ func getShootResources(blackholingEnabled, pspEnabled bool, secretData map[strin
 	return shootResources, nil
 }
 
-func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, serviceAccountName string) (client.Object, error) {
+func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepDuration string, serviceAccountName string) (client.Object, error) {
 	var (
 		requestCPU, _          = resource.ParseQuantity("50m")
 		requestMemory, _       = resource.ParseQuantity("64Mi")
@@ -329,10 +334,7 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, servic
 		"gardener.cloud/role": "system-component",
 	}
 
-	imageName := constants.ImageEgressFilterBlackholer
-	if !blackholingEnabled {
-		imageName = constants.ImageEgressFilterFirwaller
-	}
+	imageName := constants.ImageEgressFilter
 	image, err := imagevector.ImageVector().FindImage(imageName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find image version for %s: %v", imageName, err)
@@ -384,6 +386,14 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, servic
 						Name:            constants.ApplicationName,
 						Image:           image.String(),
 						ImagePullPolicy: corev1.PullIfNotPresent,
+						Command:         []string{"/filter-updater"},
+						Args: []string{
+							fmt.Sprintf("-blackholing=%s", strconv.FormatBool(blackholingEnabled)),
+							fmt.Sprintf("-filter-list-dir=%s", constants.FilterListPath),
+							fmt.Sprintf("-filter-list-ipv4=%s", constants.KeyIPV4List),
+							fmt.Sprintf("-filter-list-ipv6=%s", constants.KeyIPV6List),
+							fmt.Sprintf("-sleep-duration=%s", sleepDuration),
+						},
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    requestCPU,
@@ -400,15 +410,15 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, servic
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{
-								Name:      "lists",
+								Name:      constants.FilterListPath,
 								ReadOnly:  true,
-								MountPath: "/lists",
+								MountPath: fmt.Sprintf("/%s", constants.FilterListPath),
 							},
 						},
 					}},
 					Volumes: []corev1.Volume{
 						{
-							Name: "lists",
+							Name: constants.FilterListPath,
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
 									SecretName:  constants.EgressFilterSecretName,

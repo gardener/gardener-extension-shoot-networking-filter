@@ -21,13 +21,15 @@ const (
 	// ApplicationName is the name for resource describing the components deployed by the extension controller.
 	ApplicationName = "egress-filter-applier"
 
-	ImageEgressFilterBlackholer = "egress-filter-blackholer"
-	ImageEgressFilterFirwaller  = "egress-filter-firewaller"
+	ImageEgressFilter = "egress-filter"
 
 	// FilterListSecretName name of the secret containing the egress filter list
 	FilterListSecretName = "egress-filter-list"
 	// ExtensionNamespaceEnvName is the namespace of the extension deployment
 	ExtensionNamespaceEnvName = "EXTENSION_NAMESPACE"
+
+	// FliterListPath is the mount path of the policy files
+	FilterListPath = "lists"
 
 	// KeyIPV4List is the key in the filter list secret for the ipv4 policy list
 	KeyIPV4List = "ipv4-list"

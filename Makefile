@@ -14,7 +14,11 @@ LEADER_ELECTION             := false
 IGNORE_OPERATION_ANNOTATION := true
 
 
-TOOLS_DIR := $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools
+#########################################
+# Tools                                 #
+#########################################
+
+TOOLS_DIR := $(REPO_ROOT)/hack/tools
 include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
 
 .PHONY: start
@@ -102,3 +106,7 @@ verify: check check-docforge format test
 
 .PHONY: verify-extended
 verify-extended: check-generate check check-docforge format test test-cov test-clean
+
+.PHONY: test-e2e-local
+test-e2e-local: $(KIND) $(YQ) $(GINKGO)
+	@$(REPO_ROOT)/hack/test-e2e-provider-local.sh --procs=3

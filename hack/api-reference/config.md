@@ -160,6 +160,19 @@ bool
 </tr>
 <tr>
 <td>
+<code>sleepDuration</code></br>
+<em>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#duration-v1-meta">
+Kubernetes meta/v1.Duration
+</a>
+</em>
+</td>
+<td>
+<p>SleepDuration is the time interval between policy updates.</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>filterListProviderType</code></br>
 <em>
 <a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.FilterListProviderType">

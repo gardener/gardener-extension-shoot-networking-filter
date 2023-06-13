@@ -30,6 +30,9 @@ type EgressFilter struct {
 	// BlackholingEnabled is a flag to set blackholing or firewall approach.
 	BlackholingEnabled bool `json:"blackholingEnabled"`
 
+	// SleepDuration is the time interval between policy updates.
+	SleepDuration *metav1.Duration `json:"sleepDuration,omitempty"`
+
 	// FilterListProviderType specifies how the filter list is retrieved.
 	// Supported types are `static` and `download`.
 	FilterListProviderType FilterListProviderType `json:"filterListProviderType,omitempty"`
