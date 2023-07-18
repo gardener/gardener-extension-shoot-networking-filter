@@ -33,6 +33,7 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config/v1alpha1"
@@ -46,12 +47,28 @@ const (
 )
 
 // NewActuator returns an actuator responsible for Extension resources.
-func NewActuator(config config.Configuration, oauth2secret *config.OAuth2Secret) extension.Actuator {
-	return &actuator{
+func NewActuator(mgr manager.Manager, serviceConfig config.Configuration, oauth2secret *config.OAuth2Secret) (extension.Actuator, error) {
+	a := &actuator{
+		client:        mgr.GetClient(),
+		config:        mgr.GetConfig(),
+		scheme:        mgr.GetScheme(),
+		decoder:       serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
 		logger:        log.Log.WithName(ActuatorName),
-		serviceConfig: config,
+		serviceConfig: serviceConfig,
 		oauth2secret:  oauth2secret,
 	}
+
+	switch a.serviceConfig.EgressFilter.FilterListProviderType {
+	case config.FilterListProviderTypeStatic:
+		a.provider = newStaticFilterListProvider(context.Background(), a.client, a.logger, a.serviceConfig.EgressFilter.StaticFilterList)
+	case config.FilterListProviderTypeDownload:
+		a.provider = newDownloaderFilterListProvider(context.Background(), a.client, a.logger,
+			a.serviceConfig.EgressFilter.DownloaderConfig, a.oauth2secret)
+	default:
+		return nil, fmt.Errorf("unexpected FilterListProviderType: %s", a.serviceConfig.EgressFilter.FilterListProviderType)
+	}
+	a.logger.Info("Update filter list")
+	return a, a.provider.Setup()
 }
 
 type actuator struct {
@@ -170,25 +187,6 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 	return a.Delete(ctx, log, ex)
 }
 
-// InjectConfig injects the rest config to this actuator.
-func (a *actuator) InjectConfig(config *rest.Config) error {
-	a.config = config
-	return nil
-}
-
-// InjectClient injects the controller runtime client into the reconciler.
-func (a *actuator) InjectClient(client client.Client) error {
-	a.client = client
-	return a.setupFilterListProvider()
-}
-
-// InjectScheme injects the given scheme into the reconciler.
-func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
-	a.scheme = scheme
-	a.decoder = serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
-	return nil
-}
-
 func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, filterList []config.Filter) (map[string][]byte, error) {
 	secretData, err := a.provider.ReadSecretData(ctx)
 	if err != nil {
@@ -257,20 +255,6 @@ func (a *actuator) collectSeedLoadBalancersIPs(ctx context.Context, namespaces [
 	}
 	a.logger.Info(fmt.Sprintf("found %d seed load balancers with %d IP addresses in %d namespaces", countLBs, len(result), len(namespaces)))
 	return result, nil
-}
-
-func (a *actuator) setupFilterListProvider() error {
-	switch a.serviceConfig.EgressFilter.FilterListProviderType {
-	case config.FilterListProviderTypeStatic:
-		a.provider = newStaticFilterListProvider(context.Background(), a.client, a.logger, a.serviceConfig.EgressFilter.StaticFilterList)
-	case config.FilterListProviderTypeDownload:
-		a.provider = newDownloaderFilterListProvider(context.Background(), a.client, a.logger,
-			a.serviceConfig.EgressFilter.DownloaderConfig, a.oauth2secret)
-	default:
-		return fmt.Errorf("unexpected FilterListProviderType: %s", a.serviceConfig.EgressFilter.FilterListProviderType)
-	}
-	a.logger.Info("Update filter list")
-	return a.provider.Setup()
 }
 
 func getShootResources(blackholingEnabled, pspEnabled bool, sleepDuration string, secretData map[string][]byte) (map[string][]byte, error) {
