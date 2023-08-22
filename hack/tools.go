@@ -14,6 +14,6 @@ import (
 
 	_ "github.com/ahmetb/gen-crd-api-reference-docs"
 	_ "golang.org/x/tools/cmd/goimports"
-	_ "github.com/golang/mock/mockgen"
+	_ "go.uber.org/mock/mockgen"
 	_ "k8s.io/code-generator"
 )
