@@ -172,6 +172,11 @@ func (a *actuator) Delete(ctx context.Context, _ logr.Logger, ex *extensionsv1al
 	return nil
 }
 
+// ForceDelete implements Network.Actuator.
+func (a *actuator) ForceDelete(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
+	return a.Delete(ctx, log, ex)
+}
+
 // Restore the Extension resource.
 func (a *actuator) Restore(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	return a.Reconcile(ctx, log, ex)
