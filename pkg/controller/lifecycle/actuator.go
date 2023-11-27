@@ -35,10 +35,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/gardener/gardener-extension-shoot-networking-filter/imagevector"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config/v1alpha1"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
-	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/imagevector"
 )
 
 const (
