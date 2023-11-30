@@ -5,7 +5,7 @@ Gardener allows shoot clusters to filter egress traffic on node level. To suppor
 
 ## Configuration
 
-To generally enable the networking filter for shoot objects the `shoot-networking-filter` extension must be registered by providing an appropriate [extension registration](https://github.com/gardener/gardener-extension-shoot-networking-filter/blob/master/example/controller-registration.yaml) in the garden cluster.
+To generally enable the networking filter for shoot objects the `shoot-networking-filter` extension must be registered by providing an appropriate [extension registration](../../example/controller-registration.yaml) in the garden cluster.
 
 Here it is possible to decide whether the extension should be always available for all shoots or whether the extension must be separately enabled per shoot.
 
@@ -23,7 +23,7 @@ spec:
 ```
 
 ### ControllerRegistration
-An example of a `ControllerRegistration` for the `shoot-networking-filter` can be found here: https://github.com/gardener/gardener-extension-shoot-networking-filter/blob/master/example/controller-registration.yaml
+An example of a `ControllerRegistration` for the `shoot-networking-filter` can be found at [controller-registration.yaml](../../example/controller-registration.yaml).
 
 The `ControllerRegistration` contains a Helm chart which eventually deploys the `shoot-networking-filter` to seed clusters. It offers some configuration options, mainly to set up a static filter list or provide the configuration for downloading the filter list from a service endpoint.
 
