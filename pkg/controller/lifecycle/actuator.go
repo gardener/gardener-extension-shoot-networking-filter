@@ -311,11 +311,12 @@ func getShootResources(blackholingEnabled, pspEnabled bool, sleepDuration string
 
 func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepDuration string, serviceAccountName string) (client.Object, error) {
 	var (
-		requestCPU, _          = resource.ParseQuantity("50m")
-		requestMemory, _       = resource.ParseQuantity("64Mi")
-		limitMemory, _         = resource.ParseQuantity("256Mi")
-		defaultMode      int32 = 0400
-		zero             int64 = 0
+		requestCPU, _                        = resource.ParseQuantity("50m")
+		requestMemory, _                     = resource.ParseQuantity("64Mi")
+		limitMemory, _                       = resource.ParseQuantity("256Mi")
+		defaultMode      int32               = 0400
+		zero             int64               = 0
+		hostPathType     corev1.HostPathType = corev1.HostPathFileOrCreate
 	)
 
 	labels := map[string]string{
@@ -403,6 +404,11 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 								ReadOnly:  true,
 								MountPath: fmt.Sprintf("/%s", constants.FilterListPath),
 							},
+							{
+								Name:      constants.XtablesLockName,
+								ReadOnly:  false,
+								MountPath: constants.XtablesLockPath,
+							},
 						},
 					}},
 					Volumes: []corev1.Volume{
@@ -412,6 +418,15 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 								Secret: &corev1.SecretVolumeSource{
 									SecretName:  constants.EgressFilterSecretName,
 									DefaultMode: &defaultMode,
+								},
+							},
+						},
+						{
+							Name: constants.XtablesLockName,
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+									Path: constants.XtablesLockPath,
+									Type: &hostPathType,
 								},
 							},
 						},
