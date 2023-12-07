@@ -44,4 +44,8 @@ const (
 	KeyClientCert = "client.crt.pem"
 	// KeyClientCertKey is the key in the OAuth2 secret for the optional private key of the client certificate.
 	KeyClientCertKey = "client.key.pem"
+	// XtablesLockName is the name of volume and volumemount of the xtables lock file.
+	XtablesLockName = "xtables-lock"
+	// XtablesLockPath is the path of the xtables lock file.
+	XtablesLockPath = "/run/xtables.lock"
 )
