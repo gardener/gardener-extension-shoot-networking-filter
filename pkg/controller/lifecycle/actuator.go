@@ -502,7 +502,7 @@ func buildPodSecurityPolicy(serviceAccountName string) ([]client.Object, error) 
 			DefaultAddCapabilities:   nil,
 			RequiredDropCapabilities: nil,
 			AllowedCapabilities:      []corev1.Capability{"NET_ADMIN"},
-			Volumes:                  []policyv1beta1.FSType{"secret"},
+			Volumes:                  []policyv1beta1.FSType{"secret", "hostPath"},
 			HostNetwork:              true,
 			HostPorts:                nil,
 			HostPID:                  false,
