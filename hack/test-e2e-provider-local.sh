@@ -30,7 +30,7 @@ cd $repo_root
 
 version=$(git rev-parse HEAD)
 make docker-images
-docker tag eu.gcr.io/gardener-project/gardener/extensions/shoot-networking-filter:latest shoot-networking-filter-local:$version
+docker tag europe-docker.pkg.dev/gardener-project/public/gardener/extensions/shoot-networking-filter:latest shoot-networking-filter-local:$version
 kind load docker-image shoot-networking-filter-local:$version --name gardener-local
 
 mkdir -p $repo_root/tmp
