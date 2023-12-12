@@ -4,7 +4,7 @@
 
 ---
 image:
-  repository: eu.gcr.io/gardener-project/gardener/extensions/shoot-networking-filter
+  repository: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/shoot-networking-filter
   tag: latest
   pullPolicy: IfNotPresent
 
