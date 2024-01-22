@@ -119,6 +119,14 @@ func (c *PolicyFilterConfig) ApplyHealthCheckConfig(config *healthcheckconfig.He
 	}
 }
 
+func (c *PolicyFilterConfig) Oauth2Config() *apisconfig.OAuth2Secret {
+	return c.oAuth2Secret
+}
+
+func (c *PolicyFilterConfig) Config() apisconfig.Configuration {
+	return c.config
+}
+
 // ControllerSwitches are the cmd.ControllerSwitches for the extension controllers.
 func ControllerSwitches() *cmd.SwitchOptions {
 	return cmd.NewSwitchOptions(
