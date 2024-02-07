@@ -26,12 +26,12 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/configmap-extension-shoot-networking-filter.config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
+        checksum/configmap-runtime-networking-filter.config: {{ include (print $.Template.BasePath "/config.yaml") . | sha256sum }}
         {{- if .Values.egressFilter.oauth2Secret }}
-        checksum/secret-extension-shoot-networking-filter.oauth2: {{ include (print $.Template.BasePath "/secret-oauth2.yaml") . | sha256sum }}
+        checksum/secret-runtime-networking-filter.oauth2: {{ include (print $.Template.BasePath "/secret-oauth2.yaml") . | sha256sum }}
         {{- end }}
         {{- if .Values.imageVectorOverwrite }}
-        checksum/configmap-extension-imagevector-overwrite: {{ include (print $.Template.BasePath "/configmap-imagevector-overwrite.yaml") . | sha256sum }}
+        checksum/configmap-imagevector-overwrite: {{ include (print $.Template.BasePath "/configmap-imagevector-overwrite.yaml") . | sha256sum }}
         {{- end }}
         {{- if .Values.metrics.enableScraping }}
         prometheus.io/name: {{ .Release.Name }}
@@ -55,10 +55,10 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         command:
         - /gardener-runtime-networking-filter
-        - --config=/etc/shoot-networking-filter/config.yaml
+        - --config=/etc/runtime-networking-filter/config.yaml
         - --resource-class=seed
         {{- if .Values.egressFilter.oauth2Secret }}
-        - --oauth2-config-dir=/etc/shoot-networking-filter/oauth2
+        - --oauth2-config-dir=/etc/runtime-networking-filter/oauth2
         {{- end }}
         env:
         - name: EXTENSION_NAMESPACE
@@ -66,10 +66,10 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         volumeMounts:
-        - mountPath: /etc/shoot-networking-filter
+        - mountPath: /etc/runtime-networking-filter
           name: runtime-networking-filter-config
           readOnly: true
-        - mountPath: /etc/shoot-networking-filter/oauth2
+        - mountPath: /etc/runtime-networking-filter/oauth2
           name: runtime-networking-filter-oauth
           readOnly: true
 

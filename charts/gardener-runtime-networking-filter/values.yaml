@@ -4,7 +4,7 @@
 
 ---
 image:
-  repository: docker.io/axel7born/gardener-runtime-networking-filter
+  repository: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/shoot-networking-filter
   tag: latest
   pullPolicy: IfNotPresent
 
