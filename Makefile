@@ -54,7 +54,7 @@ docker-login:
 .PHONY: docker-images
 docker-images:
 	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) -t $(IMAGE_PREFIX)/$(NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(NAME):latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME) .
-	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) -t $(IMAGE_PREFIX)/$(NON_SHOOT_NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(NON_SHOOT_NAME):latest -f Dockerfile.runtime -m 6g --target $(NON_SHOOT_NAME) .
+	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) -t $(IMAGE_PREFIX)/$(NON_SHOOT_NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(NON_SHOOT_NAME):latest -f Dockerfile -m 6g --target $(NON_SHOOT_NAME) .
 
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #

@@ -31,7 +31,7 @@ gardener-extension-shoot-networking-filter:
                 availability_requirement: 'low'
           gardener-runtime-networking-filter:
             image: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/runtime-networking-filter
-            dockerfile: 'Dockerfile.runtime'
+            dockerfile: 'Dockerfile'
             target: gardener-runtime-networking-filter
             resource_labels:
             - name: 'gardener.cloud/cve-categorisation'
