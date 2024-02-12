@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -337,7 +337,7 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 			Labels:    labels,
 		},
 		Spec: appsv1.DaemonSetSpec{
-			RevisionHistoryLimit: pointer.Int32(5),
+			RevisionHistoryLimit: ptr.To(int32(5)),
 			Selector:             &metav1.LabelSelector{MatchLabels: labels},
 			UpdateStrategy: appsv1.DaemonSetUpdateStrategy{
 				Type: appsv1.RollingUpdateDaemonSetStrategyType,
@@ -370,7 +370,7 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 							Operator: corev1.TolerationOpExists,
 						},
 					},
-					AutomountServiceAccountToken: pointer.Bool(false),
+					AutomountServiceAccountToken: ptr.To(false),
 					ServiceAccountName:           serviceAccountName,
 					Containers: []corev1.Container{{
 						Name:            constants.ApplicationName,
@@ -486,7 +486,7 @@ func buildPodSecurityPolicy(serviceAccountName string) ([]client.Object, error) 
 			Name:      serviceAccountName,
 			Namespace: constants.NamespaceKubeSystem,
 		},
-		AutomountServiceAccountToken: pointer.Bool(false),
+		AutomountServiceAccountToken: ptr.To(false),
 	}
 	t := true
 	psp := &policyv1beta1.PodSecurityPolicy{
