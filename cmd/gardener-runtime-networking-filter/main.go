@@ -39,9 +39,9 @@ func getPFConfig(logger logr.Logger, configLocation, oAuth2ConfigDir string) (*p
 }
 
 func getNameSpace() (string, error) {
-	namespace := os.Getenv(constants.ExtensionNamespaceEnvName)
+	namespace := os.Getenv(constants.FilterNamespaceEnvName)
 	if namespace == "" {
-		return "", fmt.Errorf("missing env variable %q", constants.ExtensionNamespaceEnvName)
+		return "", fmt.Errorf("missing env variable %q", constants.FilterNamespaceEnvName)
 	}
 	return namespace, nil
 }
@@ -64,93 +64,109 @@ func getClient(logger logr.Logger) (client.Client, error) {
 	return client, nil
 }
 
-func main() {
+func newNetworkFilter() networkFilter {
+	n := networkFilter{
+		blackholingEnabled: false,
+		sleepDuration:      "1h",
+		refreshPeriod:      time.Hour,
+		pspEnabled:         true,
+		configLocation:     flag.String("config", "/etc/runtime-networking-filter/config.yaml", "Config location"),
+		oAuth2ConfigDir:    flag.String("oauth2-config-dir", "/etc/runtime-networking-filter/oauth2", "OAuth2 config directory"),
+		resourceClass:      flag.String("resource-class", "seed", "resource-class of gardener resource manager"),
+	}
+	flag.Parse()
+	return n
+}
 
-	log.SetLogger(logger.MustNewZapLogger(logger.InfoLevel, logger.FormatJSON))
-	logger := log.Log.WithName("Networking-Filter")
-	logger.Info("Starting Network filter")
+type networkFilter struct {
+	logger             logr.Logger
+	blackholingEnabled bool
+	sleepDuration      string
+	refreshPeriod      time.Duration
+	pspEnabled         bool
+	configLocation     *string
+	oAuth2ConfigDir    *string
+	resourceClass      *string
+}
 
+func (n networkFilter) startNetworkFilter() error {
 	var provider lifecycle.FilterListProvider
 
-	blackholingEnabled := false
-	sleepDuration := "1h"
-	refreshPeriod := 2 * time.Hour
-	pspEnabled := true
-
-	configLocation := flag.String("config", "/etc/runtime-networking-filter/config.yaml", "Config location")
-	oAuth2ConfigDir := flag.String("oauth2-config-dir", "/etc/runtime-networking-filter/oauth2", "OAuth2 config directory")
-	resourceClass := flag.String("resource-class", "seed", "resource-class of gardener resource manager")
-	flag.Parse()
-
+	ctx := context.Background()
 	networkFilterNamespace, err := getNameSpace()
 	if err != nil {
-		logger.Error(err, "Error getting namespace")
-		panic(err.Error())
+		return fmt.Errorf("getting namespace failed: %w", err)
 	}
-	logger.Info("Get Client.")
-	client, err := getClient(logger)
+	n.logger.Info("Get Client.")
+	client, err := getClient(n.logger)
 	if err != nil {
-		logger.Error(err, "Error getting Client")
-		panic(err.Error())
+		return fmt.Errorf("getting client failed: %w", err)
 	}
-	logger.Info("Get Config.")
-	pfconfig, err := getPFConfig(logger, *configLocation, *oAuth2ConfigDir)
+	n.logger.Info("Get Config.")
+	pfconfig, err := getPFConfig(n.logger, *n.configLocation, *n.oAuth2ConfigDir)
 	if err != nil {
-		logger.Error(err, "Error getting config.")
-		panic(err.Error())
+		return fmt.Errorf("getting config failed: %w", err)
 	}
 
 	serviceConfig := pfconfig.Config()
 	oauth2secret := pfconfig.Oauth2Config()
 
 	if serviceConfig.EgressFilter != nil {
-		blackholingEnabled = serviceConfig.EgressFilter.BlackholingEnabled
+		n.blackholingEnabled = serviceConfig.EgressFilter.BlackholingEnabled
 		if serviceConfig.EgressFilter.PSPDisabled != nil {
-			pspEnabled = !*serviceConfig.EgressFilter.PSPDisabled
+			n.pspEnabled = !*serviceConfig.EgressFilter.PSPDisabled
 		}
 		if serviceConfig.EgressFilter.SleepDuration != nil {
-			sleepDuration = serviceConfig.EgressFilter.SleepDuration.Duration.String()
+			n.sleepDuration = serviceConfig.EgressFilter.SleepDuration.Duration.String()
 		}
 	}
 
 	switch serviceConfig.EgressFilter.FilterListProviderType {
 	case config.FilterListProviderTypeStatic:
-		provider = lifecycle.NewStaticFilterListProvider(context.Background(), client, logger, serviceConfig.EgressFilter.StaticFilterList)
+		provider = lifecycle.NewStaticFilterListProvider(ctx, client, n.logger, serviceConfig.EgressFilter.StaticFilterList)
 	case config.FilterListProviderTypeDownload:
-		if serviceConfig.EgressFilter.DownloaderConfig.RefreshPeriod != nil && serviceConfig.EgressFilter.DownloaderConfig.RefreshPeriod.Duration > refreshPeriod {
-			refreshPeriod = serviceConfig.EgressFilter.DownloaderConfig.RefreshPeriod.Duration
+		if serviceConfig.EgressFilter.DownloaderConfig.RefreshPeriod != nil && serviceConfig.EgressFilter.DownloaderConfig.RefreshPeriod.Duration > n.refreshPeriod {
+			n.refreshPeriod = serviceConfig.EgressFilter.DownloaderConfig.RefreshPeriod.Duration
 		}
-		provider = lifecycle.NewDownloaderFilterListProvider(context.Background(), client, logger,
+		provider = lifecycle.NewDownloaderFilterListProvider(ctx, client, n.logger,
 			serviceConfig.EgressFilter.DownloaderConfig, oauth2secret)
 	default:
-		panic(fmt.Errorf("unexpected FilterListProviderType: %s", serviceConfig.EgressFilter.FilterListProviderType))
+		return fmt.Errorf("unexpected FilterListProviderType: %s", serviceConfig.EgressFilter.FilterListProviderType)
 	}
 
 	err = provider.Setup()
 	if err != nil {
-		logger.Error(err, "Error error setting up provider.")
-		panic(err.Error())
+		return fmt.Errorf("setting up provider failed: %w", err)
 	}
 
 	for {
-		secretData, err := provider.ReadSecretData(context.Background())
+		secretData, err := provider.ReadSecretData(ctx)
 		if err != nil {
-			logger.Error(err, "Error creating filter secret.")
-			panic(err.Error())
+			return fmt.Errorf("failed creating filter secret: %w", err)
 		}
-		shootResources, err := lifecycle.GetShootResources(blackholingEnabled, pspEnabled, sleepDuration, constants.NamespaceKubeSystem, secretData)
+		shootResources, err := lifecycle.GetShootResources(n.blackholingEnabled, n.pspEnabled, n.sleepDuration, constants.NamespaceKubeSystem, secretData)
 		if err != nil {
-			logger.Error(err, "Error creating shoot resources.")
-			panic(err.Error())
+			return fmt.Errorf("failed creating shoot resources: %w", err)
 		}
-		logger.Info("Update managedresource.")
-		err = managedresources.Create(context.Background(), client, networkFilterNamespace, "networking-filter", nil, true, *resourceClass, shootResources, func() *bool { v := false; return &v }(), nil, nil)
+		n.logger.Info("Update managedresource.")
+		err = managedresources.Create(ctx, client, networkFilterNamespace, "networking-filter", nil, true, *n.resourceClass, shootResources, func() *bool { v := false; return &v }(), nil, nil)
 		if err != nil {
-			logger.Error(err, "Error creating managedresource")
-			panic(err.Error())
+			return fmt.Errorf("failed creating managedresource: %w", err)
 		}
-		logger.Info("Update Succeeded.")
-		logger.Info("Sleep for ", "refresh-period", refreshPeriod)
-		time.Sleep(refreshPeriod)
+		n.logger.Info("Update Succeeded.")
+		n.logger.Info("Sleep for ", "refresh-period", n.refreshPeriod)
+		time.Sleep(n.refreshPeriod)
+	}
+}
+
+func main() {
+	log.SetLogger(logger.MustNewZapLogger(logger.InfoLevel, logger.FormatJSON))
+	logger := log.Log.WithName("Networking-Filter")
+	logger.Info("Starting Network filter")
+
+	n := newNetworkFilter()
+	err := n.startNetworkFilter()
+	if err != nil {
+		panic(err.Error())
 	}
 }

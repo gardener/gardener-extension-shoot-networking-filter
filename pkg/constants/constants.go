@@ -25,8 +25,8 @@ const (
 
 	// FilterListSecretName name of the secret containing the egress filter list
 	FilterListSecretName = "egress-filter-list"
-	// ExtensionNamespaceEnvName is the namespace of the extension deployment
-	ExtensionNamespaceEnvName = "EXTENSION_NAMESPACE"
+	// FilterNamespaceEnvName is the namespace of the extension deployment
+	FilterNamespaceEnvName = "FILTER_NAMESPACE"
 
 	// FliterListPath is the mount path of the policy files
 	FilterListPath = "lists"

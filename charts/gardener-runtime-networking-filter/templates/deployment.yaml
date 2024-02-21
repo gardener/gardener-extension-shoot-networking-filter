@@ -61,7 +61,7 @@ spec:
         - --oauth2-config-dir=/etc/runtime-networking-filter/oauth2
         {{- end }}
         env:
-        - name: EXTENSION_NAMESPACE
+        - name: FILTER_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace

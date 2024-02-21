@@ -277,9 +277,9 @@ func (p *downloaderFilterListProvider) getAccessToken(endpoint string, oauth2sec
 }
 
 func getExtensionDeploymentNamespace() (string, error) {
-	namespace := os.Getenv(constants.ExtensionNamespaceEnvName)
+	namespace := os.Getenv(constants.FilterNamespaceEnvName)
 	if namespace == "" {
-		return "", fmt.Errorf("missing env variable %q", constants.ExtensionNamespaceEnvName)
+		return "", fmt.Errorf("missing env variable %q", constants.FilterNamespaceEnvName)
 	}
 	return namespace, nil
 }
