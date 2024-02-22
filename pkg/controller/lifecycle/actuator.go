@@ -77,7 +77,7 @@ type actuator struct {
 	decoder       runtime.Decoder
 	serviceConfig config.Configuration
 	oauth2secret  *config.OAuth2Secret
-	provider      filterListProvider
+	provider      FilterListProvider
 	logger        logr.Logger
 	scheme        *runtime.Scheme
 }
@@ -144,7 +144,7 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		pspEnabled = false
 	}
 
-	shootResources, err := getShootResources(blackholingEnabled, pspEnabled, sleepDuration, secretData)
+	shootResources, err := getShootResources(blackholingEnabled, pspEnabled, sleepDuration, constants.NamespaceKubeSystem, secretData)
 	if err != nil {
 		return err
 	}
@@ -262,7 +262,12 @@ func (a *actuator) collectSeedLoadBalancersIPs(ctx context.Context, namespaces [
 	return result, nil
 }
 
-func getShootResources(blackholingEnabled, pspEnabled bool, sleepDuration string, secretData map[string][]byte) (map[string][]byte, error) {
+// GetShootResources creates resources needed for the egress filter daemonset.
+func GetShootResources(blackholingEnabled, pspEnabled bool, sleepDuration, namespace string, secretData map[string][]byte) (map[string][]byte, error) {
+	return getShootResources(blackholingEnabled, pspEnabled, sleepDuration, namespace, secretData)
+}
+
+func getShootResources(blackholingEnabled, pspEnabled bool, sleepDuration, namespace string, secretData map[string][]byte) (map[string][]byte, error) {
 	shootRegistry := managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
 
 	if secretData == nil {
@@ -280,7 +285,7 @@ func getShootResources(blackholingEnabled, pspEnabled bool, sleepDuration string
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.EgressFilterSecretName,
-			Namespace: constants.NamespaceKubeSystem,
+			Namespace: namespace,
 		},
 		Type: corev1.SecretTypeOpaque,
 		Data: secretData,
@@ -289,14 +294,14 @@ func getShootResources(blackholingEnabled, pspEnabled bool, sleepDuration string
 	serviceAccountName := ""
 	if pspEnabled {
 		serviceAccountName = constants.ApplicationName
-		pspObjects, err := buildPodSecurityPolicy(serviceAccountName)
+		pspObjects, err := buildPodSecurityPolicy(serviceAccountName, namespace)
 		if err != nil {
 			return nil, err
 		}
 		objects = append(objects, pspObjects...)
 	}
 
-	daemonset, err := buildDaemonset(checksumEgressFilter, blackholingEnabled, sleepDuration, serviceAccountName)
+	daemonset, err := buildDaemonset(checksumEgressFilter, blackholingEnabled, sleepDuration, serviceAccountName, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +314,7 @@ func getShootResources(blackholingEnabled, pspEnabled bool, sleepDuration string
 	return shootResources, nil
 }
 
-func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepDuration string, serviceAccountName string) (client.Object, error) {
+func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepDuration, serviceAccountName, namespace string) (client.Object, error) {
 	var (
 		requestCPU, _                        = resource.ParseQuantity("50m")
 		requestMemory, _                     = resource.ParseQuantity("64Mi")
@@ -333,7 +338,7 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 	ds := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.ApplicationName,
-			Namespace: constants.NamespaceKubeSystem,
+			Namespace: namespace,
 			Labels:    labels,
 		},
 		Spec: appsv1.DaemonSetSpec{
@@ -447,7 +452,7 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 	return ds, nil
 }
 
-func buildPodSecurityPolicy(serviceAccountName string) ([]client.Object, error) {
+func buildPodSecurityPolicy(serviceAccountName, namespace string) ([]client.Object, error) {
 	roleName := "gardener.cloud:psp:kube-system:" + constants.ApplicationName
 	resourceName := "gardener.kube-system." + constants.ApplicationName
 	clusterRole := &rbacv1.ClusterRole{
@@ -477,14 +482,14 @@ func buildPodSecurityPolicy(serviceAccountName string) ([]client.Object, error) 
 			{
 				Kind:      "ServiceAccount",
 				Name:      serviceAccountName,
-				Namespace: constants.NamespaceKubeSystem,
+				Namespace: namespace,
 			},
 		},
 	}
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceAccountName,
-			Namespace: constants.NamespaceKubeSystem,
+			Namespace: namespace,
 		},
 		AutomountServiceAccountToken: ptr.To(false),
 	}

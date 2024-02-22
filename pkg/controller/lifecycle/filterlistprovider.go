@@ -30,7 +30,7 @@ const (
 	minRefreshPeriod = 30 * time.Minute
 )
 
-type filterListProvider interface {
+type FilterListProvider interface {
 	Setup() error
 	ReadSecretData(ctx context.Context) (map[string][]byte, error)
 }
@@ -89,7 +89,12 @@ type staticFilterListProvider struct {
 	filterList []config.Filter
 }
 
-var _ filterListProvider = &staticFilterListProvider{}
+var _ FilterListProvider = &staticFilterListProvider{}
+
+func NewStaticFilterListProvider(ctx context.Context, client client.Client, logger logr.Logger,
+	filterList []config.Filter) *staticFilterListProvider {
+	return newStaticFilterListProvider(ctx, client, logger, filterList)
+}
 
 func newStaticFilterListProvider(ctx context.Context, client client.Client, logger logr.Logger,
 	filterList []config.Filter) *staticFilterListProvider {
@@ -120,7 +125,12 @@ type downloaderFilterListProvider struct {
 	tickerDone       chan bool
 }
 
-var _ filterListProvider = &downloaderFilterListProvider{}
+var _ FilterListProvider = &downloaderFilterListProvider{}
+
+func NewDownloaderFilterListProvider(ctx context.Context, client client.Client, logger logr.Logger,
+	downloaderConfig *config.DownloaderConfig, oauth2Secret *config.OAuth2Secret) *downloaderFilterListProvider {
+	return newDownloaderFilterListProvider(ctx, client, logger, downloaderConfig, oauth2Secret)
+}
 
 func newDownloaderFilterListProvider(ctx context.Context, client client.Client, logger logr.Logger,
 	downloaderConfig *config.DownloaderConfig, oauth2Secret *config.OAuth2Secret) *downloaderFilterListProvider {
@@ -267,9 +277,9 @@ func (p *downloaderFilterListProvider) getAccessToken(endpoint string, oauth2sec
 }
 
 func getExtensionDeploymentNamespace() (string, error) {
-	namespace := os.Getenv(constants.ExtensionNamespaceEnvName)
+	namespace := os.Getenv(constants.FilterNamespaceEnvName)
 	if namespace == "" {
-		return "", fmt.Errorf("missing env variable %q", constants.ExtensionNamespaceEnvName)
+		return "", fmt.Errorf("missing env variable %q", constants.FilterNamespaceEnvName)
 	}
 	return namespace, nil
 }
