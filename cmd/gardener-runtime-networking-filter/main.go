@@ -69,7 +69,7 @@ func newNetworkFilter() networkFilter {
 		blackholingEnabled: false,
 		sleepDuration:      "1h",
 		refreshPeriod:      time.Hour,
-		pspEnabled:         true,
+		pspEnabled:         false,
 		configLocation:     flag.String("config", "/etc/runtime-networking-filter/config.yaml", "Config location"),
 		oAuth2ConfigDir:    flag.String("oauth2-config-dir", "/etc/runtime-networking-filter/oauth2", "OAuth2 config directory"),
 		resourceClass:      flag.String("resource-class", "seed", "resource-class of gardener resource manager"),
