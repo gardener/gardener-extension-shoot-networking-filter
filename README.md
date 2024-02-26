@@ -1,6 +1,5 @@
 # [Gardener Extension for Networking Filter](https://gardener.cloud)
-
-[![reuse compliant](https://reuse.software/badge/reuse-compliant.svg)](https://reuse.software/)
+[![REUSE status](https://api.reuse.software/badge/github.com/gardener/gardener-extension-shoot-networking-filter)](https://api.reuse.software/info/github.com/gardener/gardener-extension-shoot-networking-filter)
 
 Project Gardener implements the automated management and operation of [Kubernetes](https://kubernetes.io/) clusters as a service.
 Its main principle is to leverage Kubernetes concepts for all of its tasks.
