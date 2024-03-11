@@ -28,7 +28,7 @@ import (
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/lifecycle"
 )
 
-func getPFConfig(logger logr.Logger, configLocation, oAuth2ConfigDir string) (*pfcmd.PolicyFilterConfig, error) {
+func getPFConfig(configLocation, oAuth2ConfigDir string) (*pfcmd.PolicyFilterConfig, error) {
 	options := pfcmd.PolicyFilterOptions{ConfigLocation: configLocation, OAuth2ConfigDir: oAuth2ConfigDir}
 	err := options.Complete()
 	if err != nil {
@@ -46,7 +46,7 @@ func getNameSpace() (string, error) {
 	return namespace, nil
 }
 
-func getClient(logger logr.Logger) (client.Client, error) {
+func getClient() (client.Client, error) {
 	clientScheme := scheme.Scheme
 
 	err := resourcesv1alpha1.AddToScheme(clientScheme)
@@ -69,7 +69,6 @@ func newNetworkFilter() networkFilter {
 		blackholingEnabled: false,
 		sleepDuration:      "1h",
 		refreshPeriod:      time.Hour,
-		pspEnabled:         false,
 		configLocation:     flag.String("config", "/etc/runtime-networking-filter/config.yaml", "Config location"),
 		oAuth2ConfigDir:    flag.String("oauth2-config-dir", "/etc/runtime-networking-filter/oauth2", "OAuth2 config directory"),
 		resourceClass:      flag.String("resource-class", "seed", "resource-class of gardener resource manager"),
@@ -83,7 +82,6 @@ type networkFilter struct {
 	blackholingEnabled bool
 	sleepDuration      string
 	refreshPeriod      time.Duration
-	pspEnabled         bool
 	configLocation     *string
 	oAuth2ConfigDir    *string
 	resourceClass      *string
@@ -98,12 +96,12 @@ func (n networkFilter) startNetworkFilter() error {
 		return fmt.Errorf("getting namespace failed: %w", err)
 	}
 	n.logger.Info("Get Client.")
-	client, err := getClient(n.logger)
+	client, err := getClient()
 	if err != nil {
 		return fmt.Errorf("getting client failed: %w", err)
 	}
 	n.logger.Info("Get Config.")
-	pfconfig, err := getPFConfig(n.logger, *n.configLocation, *n.oAuth2ConfigDir)
+	pfconfig, err := getPFConfig(*n.configLocation, *n.oAuth2ConfigDir)
 	if err != nil {
 		return fmt.Errorf("getting config failed: %w", err)
 	}
@@ -113,9 +111,6 @@ func (n networkFilter) startNetworkFilter() error {
 
 	if serviceConfig.EgressFilter != nil {
 		n.blackholingEnabled = serviceConfig.EgressFilter.BlackholingEnabled
-		if serviceConfig.EgressFilter.PSPDisabled != nil {
-			n.pspEnabled = !*serviceConfig.EgressFilter.PSPDisabled
-		}
 		if serviceConfig.EgressFilter.SleepDuration != nil {
 			n.sleepDuration = serviceConfig.EgressFilter.SleepDuration.Duration.String()
 		}
@@ -144,7 +139,7 @@ func (n networkFilter) startNetworkFilter() error {
 		if err != nil {
 			return fmt.Errorf("failed creating filter secret: %w", err)
 		}
-		shootResources, err := lifecycle.GetShootResources(n.blackholingEnabled, n.pspEnabled, n.sleepDuration, constants.NamespaceKubeSystem, secretData)
+		shootResources, err := lifecycle.GetShootResources(n.blackholingEnabled, n.sleepDuration, constants.NamespaceKubeSystem, secretData)
 		if err != nil {
 			return fmt.Errorf("failed creating shoot resources: %w", err)
 		}

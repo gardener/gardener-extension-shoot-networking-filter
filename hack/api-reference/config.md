@@ -117,7 +117,7 @@ If specified, the OAuth2Secret must be provided, too.</p>
 <td>
 <code>refreshPeriod</code></br>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#duration-v1-meta">
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.28/#duration-v1-meta">
 Kubernetes meta/v1.Duration
 </a>
 </em>
@@ -162,7 +162,7 @@ bool
 <td>
 <code>sleepDuration</code></br>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#duration-v1-meta">
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.28/#duration-v1-meta">
 Kubernetes meta/v1.Duration
 </a>
 </em>
@@ -227,17 +227,6 @@ EnsureConnectivity
 <td>
 <em>(Optional)</em>
 <p>EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.</p>
-</td>
-</tr>
-<tr>
-<td>
-<code>pspDisabled</code></br>
-<em>
-bool
-</em>
-</td>
-<td>
-<p>PSPDisabled is a flag to disable pod security policy.</p>
 </td>
 </tr>
 </tbody>
