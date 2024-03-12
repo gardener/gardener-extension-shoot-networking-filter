@@ -102,6 +102,7 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 
 	if a.serviceConfig.EgressFilter != nil {
 		blackholingEnabled = a.serviceConfig.EgressFilter.BlackholingEnabled
+
 		if a.serviceConfig.EgressFilter.SleepDuration != nil {
 			sleepDuration = a.serviceConfig.EgressFilter.SleepDuration.Duration.String()
 		}
@@ -274,9 +275,8 @@ func getShootResources(blackholingEnabled bool, sleepDuration, namespace string,
 		Data: secretData,
 	}
 	objects = append(objects, secret)
-	serviceAccountName := ""
 
-	daemonset, err := buildDaemonset(checksumEgressFilter, blackholingEnabled, sleepDuration, serviceAccountName, namespace)
+	daemonset, err := buildDaemonset(checksumEgressFilter, blackholingEnabled, sleepDuration, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +289,7 @@ func getShootResources(blackholingEnabled bool, sleepDuration, namespace string,
 	return shootResources, nil
 }
 
-func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepDuration, serviceAccountName, namespace string) (client.Object, error) {
+func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepDuration, namespace string) (client.Object, error) {
 	var (
 		requestCPU, _                        = resource.ParseQuantity("50m")
 		requestMemory, _                     = resource.ParseQuantity("64Mi")
@@ -351,7 +351,6 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 						},
 					},
 					AutomountServiceAccountToken: ptr.To(false),
-					ServiceAccountName:           serviceAccountName,
 					Containers: []corev1.Container{{
 						Name:            constants.ApplicationName,
 						Image:           image.String(),

@@ -14,8 +14,9 @@ if [[ ! -d "$repo_root/gardener" ]]; then
   git clone https://github.com/gardener/gardener.git
 fi
 
+gardener_version=$(go list -m -f '{{.Version}}' github.com/gardener/gardener)
 cd "$repo_root/gardener"
-git checkout 0b62295ea02a03bf3d28fdcf5dc570b8bc090295 # g/g v1.72.1
+git checkout "$gardener_version"
 source "$repo_root/gardener/hack/ci-common.sh"
 make kind-up
 trap '{

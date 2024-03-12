@@ -28,7 +28,7 @@ import (
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/controller/lifecycle"
 )
 
-func getPFConfig(logger logr.Logger, configLocation, oAuth2ConfigDir string) (*pfcmd.PolicyFilterConfig, error) {
+func getPFConfig(configLocation, oAuth2ConfigDir string) (*pfcmd.PolicyFilterConfig, error) {
 	options := pfcmd.PolicyFilterOptions{ConfigLocation: configLocation, OAuth2ConfigDir: oAuth2ConfigDir}
 	err := options.Complete()
 	if err != nil {
@@ -46,7 +46,7 @@ func getNameSpace() (string, error) {
 	return namespace, nil
 }
 
-func getClient(logger logr.Logger) (client.Client, error) {
+func getClient() (client.Client, error) {
 	clientScheme := scheme.Scheme
 
 	err := resourcesv1alpha1.AddToScheme(clientScheme)
@@ -96,12 +96,12 @@ func (n networkFilter) startNetworkFilter() error {
 		return fmt.Errorf("getting namespace failed: %w", err)
 	}
 	n.logger.Info("Get Client.")
-	client, err := getClient(n.logger)
+	client, err := getClient()
 	if err != nil {
 		return fmt.Errorf("getting client failed: %w", err)
 	}
 	n.logger.Info("Get Config.")
-	pfconfig, err := getPFConfig(n.logger, *n.configLocation, *n.oAuth2ConfigDir)
+	pfconfig, err := getPFConfig(*n.configLocation, *n.oAuth2ConfigDir)
 	if err != nil {
 		return fmt.Errorf("getting config failed: %w", err)
 	}
