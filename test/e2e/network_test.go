@@ -14,7 +14,6 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	gardenerutils "github.com/gardener/gardener/pkg/utils/gardener"
-	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/test/framework"
 	"github.com/gardener/gardener/test/utils/access"
 	. "github.com/onsi/ginkgo/v2"
@@ -83,7 +82,7 @@ var _ = Describe("Network Filter Tests", Label("Network"), func() {
 
 			shootKubeconfigSecret := &corev1.Secret{}
 			gardenClient := f.GardenClient.Client()
-			err = gardenClient.Get(ctx, kubernetesutils.Key(f.Shoot.Namespace, gardenerutils.ComputeShootProjectResourceName(f.Shoot.Name, gardenerutils.ShootProjectSecretSuffixKubeconfig)), shootKubeconfigSecret)
+			err = gardenClient.Get(ctx, client.ObjectKey{Namespace: f.Shoot.Namespace, Name: gardenerutils.ComputeShootProjectResourceName(f.Shoot.Name, gardenerutils.ShootProjectSecretSuffixKubeconfig)}, shootKubeconfigSecret)
 			Expect(err).NotTo(HaveOccurred())
 
 			f.ShootFramework.ShootClient, err = access.CreateShootClientFromAdminKubeconfig(ctx, f.GardenClient, f.Shoot)
