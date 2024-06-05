@@ -22,7 +22,7 @@ spec:
         - /bin/bash
         - -c
         - |
-          apt-get update && apt-get install -y netcat iptables python3 python3-pip; pip3 install scapy; while true; do sleep 30; done
+          apt-get update && apt-get install -y netcat-openbsd iptables python3 python3-pip; pip3 install --break-system-packages scapy; while true; do sleep 30; done
         securityContext:
           privileged: true
 
