@@ -13,13 +13,10 @@ import (
 
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
-	gardenerutils "github.com/gardener/gardener/pkg/utils/gardener"
 	"github.com/gardener/gardener/test/framework"
 	"github.com/gardener/gardener/test/utils/access"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -80,20 +77,7 @@ var _ = Describe("Network Filter Tests", Label("Network"), func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			shootKubeconfigSecret := &corev1.Secret{}
-			gardenClient := f.GardenClient.Client()
-			err = gardenClient.Get(ctx, client.ObjectKey{Namespace: f.Shoot.Namespace, Name: gardenerutils.ComputeShootProjectResourceName(f.Shoot.Name, gardenerutils.ShootProjectSecretSuffixKubeconfig)}, shootKubeconfigSecret)
-			Expect(err).NotTo(HaveOccurred())
-
 			f.ShootFramework.ShootClient, err = access.CreateShootClientFromAdminKubeconfig(ctx, f.GardenClient, f.Shoot)
-			Expect(err).NotTo(HaveOccurred())
-
-			newShootKubeconfigSecret := &corev1.Secret{ObjectMeta: v1.ObjectMeta{
-				Name:      "kubeconfig",
-				Namespace: values.HelmDeployNamespace},
-				Data: map[string][]byte{"kubeconfig": shootKubeconfigSecret.Data["kubeconfig"]},
-			}
-			err = f.ShootFramework.ShootClient.Client().Create(ctx, newShootKubeconfigSecret)
 			Expect(err).NotTo(HaveOccurred())
 
 			resourceDir, err := filepath.Abs(filepath.Join(".."))
