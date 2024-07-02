@@ -29,6 +29,8 @@ gardener-extension-shoot-networking-filter:
                 confidentiality_requirement: 'high'
                 integrity_requirement: 'high'
                 availability_requirement: 'low'
+            - name: imagevector.gardener.cloud/name
+              value: gardener-extension-shoot-networking-filter
           gardener-runtime-networking-filter:
             image: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/runtime-networking-filter
             dockerfile: 'Dockerfile'
@@ -42,6 +44,8 @@ gardener-extension-shoot-networking-filter:
                 confidentiality_requirement: 'high'
                 integrity_requirement: 'high'
                 availability_requirement: 'low'
+            - name: imagevector.gardener.cloud/name
+              value: gardener-runtime-networking-filter
   jobs:
     head-update:
       traits:
@@ -80,7 +84,13 @@ gardener-extension-shoot-networking-filter:
             gardener-extension-shoot-networking-filter:
               image: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/shoot-networking-filter
               tag_as_latest: true
+              resource_labels:
+                - name: imagevector.gardener.cloud/repository
+                  value: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/shoot-networking-filter
             gardener-runtime-networking-filter:
               image: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/runtime-networking-filter
               tag_as_latest: true
+              resource_labels:
+                - name: imagevector.gardener.cloud/repository
+                  value: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/runtime-networking-filter
 
