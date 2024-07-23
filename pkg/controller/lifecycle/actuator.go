@@ -291,8 +291,8 @@ func getShootResources(blackholingEnabled bool, sleepDuration, namespace string,
 
 func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepDuration, namespace string) (client.Object, error) {
 	var (
-		requestCPU, _                        = resource.ParseQuantity("50m")
-		requestMemory, _                     = resource.ParseQuantity("64Mi")
+		requestCPU, _                        = resource.ParseQuantity("5m")
+		requestMemory, _                     = resource.ParseQuantity("20Mi")
 		limitMemory, _                       = resource.ParseQuantity("256Mi")
 		defaultMode      int32               = 0400
 		zero             int64               = 0
