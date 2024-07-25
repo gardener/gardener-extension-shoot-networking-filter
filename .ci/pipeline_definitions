@@ -3,6 +3,27 @@
 # SPDX-License-Identifier: Apache-2.0
 
 gardener-extension-shoot-networking-filter:
+  templates:
+    helmcharts:
+    - &shoot-networking-filter
+      name: shoot-networking-filter
+      dir: charts/gardener-extension-shoot-networking-filter
+      registry: europe-docker.pkg.dev/gardener-project/snapshots/charts/gardener/extensions
+      mappings:
+      - ref: ocm-resource:gardener-extension-shoot-networking-filter.repository
+        attribute: image.repository
+      - ref: ocm-resource:gardener-extension-shoot-networking-filter.tag
+        attribute: image.tag
+    - &runtime-networking-filter
+      name: runtime-networking-filter
+      dir: charts/gardener-runtime-networking-filter
+      registry: europe-docker.pkg.dev/gardener-project/snapshots/charts/gardener/extensions
+      mappings:
+      - ref: ocm-resource:gardener-runtime-networking-filter.repository
+        attribute: global.image.repository
+      - ref: ocm-resource:gardener-runtime-networking-filter.tag
+        attribute: global.image.tag
+
   base_definition:
     traits:
       component_descriptor:
@@ -55,6 +76,10 @@ gardener-extension-shoot-networking-filter:
         draft_release: ~
         options:
           public_build_logs: true
+        publish:
+          helmcharts:
+          - *shoot-networking-filter
+          - *runtime-networking-filter
     pull-request:
       traits:
         pull-request: ~
@@ -63,6 +88,10 @@ gardener-extension-shoot-networking-filter:
             - repository: europe-docker.pkg.dev/gardener-project/releases
         options:
           public_build_logs: true
+        publish:
+          helmcharts:
+          - *shoot-networking-filter
+          - *runtime-networking-filter
     release:
       traits:
         version:
@@ -93,4 +122,8 @@ gardener-extension-shoot-networking-filter:
               resource_labels:
                 - name: imagevector.gardener.cloud/repository
                   value: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/runtime-networking-filter
-
+          helmcharts:
+          - <<: *shoot-networking-filter
+            registry: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions
+          - <<: *runtime-networking-filter
+            registry: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions
