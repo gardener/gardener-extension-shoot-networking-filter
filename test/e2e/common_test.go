@@ -54,7 +54,7 @@ func defaultShoot(generateName string, blackholing bool, blockAddress string) *g
 		Spec: gardencorev1beta1.ShootSpec{
 			Region:            "local",
 			SecretBindingName: ptr.To("local"),
-			CloudProfileName:  "local",
+			CloudProfileName:  ptr.To("local"),
 			Kubernetes: gardencorev1beta1.Kubernetes{
 				Version:                     "1.26.0",
 				EnableStaticTokenKubeconfig: ptr.To(true),
