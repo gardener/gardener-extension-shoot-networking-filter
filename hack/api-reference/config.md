@@ -160,6 +160,20 @@ bool
 </tr>
 <tr>
 <td>
+<code>workerSpecific</code></br>
+<em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.WorkerSpecific">
+WorkerSpecific
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>WorkerSpecific contains worker-specific block modes</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>sleepDuration</code></br>
 <em>
 <a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.28/#duration-v1-meta">
@@ -323,6 +337,47 @@ Policy
 <p>
 <p>Policy is the access policy</p>
 </p>
+<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.WorkerSpecific">WorkerSpecific
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
+</p>
+<p>
+<p>WorkerSpecific allows to set the blocking mode for specific worker groups which may differ from the default.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>blackholingEnabled</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<p>BlackholingEnabled is a flag to set blackholing or firewall approach.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>groups</code></br>
+<em>
+[]string
+</em>
+</td>
+<td>
+<p>Groups is a list of worker groups to use the specified blocking mode.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <hr/>
 <p><em>
 Generated with <a href="https://github.com/ahmetb/gen-crd-api-reference-docs">gen-crd-api-reference-docs</a>

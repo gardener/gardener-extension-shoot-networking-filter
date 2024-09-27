@@ -27,6 +27,9 @@ type EgressFilter struct {
 	// BlackholingEnabled is a flag to set blackholing or firewall approach.
 	BlackholingEnabled bool
 
+	// WorkerSpecific contains worker-specific block modes
+	WorkerSpecific *WorkerSpecific
+
 	// SleepDuration is the time interval between policy updates.
 	SleepDuration *metav1.Duration
 
@@ -102,4 +105,13 @@ type OAuth2Secret struct {
 type EnsureConnectivity struct {
 	// SeedNamespaces contains the seed namespaces to check for load balancers.
 	SeedNamespaces []string
+}
+
+// WorkerSpecific allows to specify block modes per worker group.
+type WorkerSpecific struct {
+	// BlackholingEnabled is a flag to set blackholing or firewall approach.
+	BlackholingEnabled bool
+
+	// Groups is a list of worker groups to use the specified blocking mode.
+	Groups []string
 }
