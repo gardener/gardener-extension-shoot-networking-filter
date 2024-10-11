@@ -257,6 +257,7 @@ func (p *downloaderFilterListProvider) getAccessToken(endpoint string, oauth2sec
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
 					Certificates: []tls.Certificate{cert},
+					MinVersion:   tls.VersionTLS12,
 				},
 			},
 		}
