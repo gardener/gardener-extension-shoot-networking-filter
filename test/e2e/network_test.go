@@ -7,6 +7,7 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"io"
 	"path/filepath"
 	"time"
@@ -69,6 +70,10 @@ var _ = Describe("Network Filter Tests", Label("Network"), func() {
 				blockAddress,
 			}
 
+			//TODO:
+			//- rework this so that the template is also rendered before and after the switch from/to blackholing
+			//- add a check to network-test.yaml that verifies that there are no remnants of the other blocking mode on the node
+
 			var err error
 			f.GardenClient, err = kubernetes.NewClientFromFile("", f.ShootFramework.Config.GardenerConfig.GardenerKubeconfig,
 				kubernetes.WithClientOptions(client.Options{Scheme: kubernetes.GardenScheme}),
@@ -113,6 +118,33 @@ var _ = Describe("Network Filter Tests", Label("Network"), func() {
 
 			Expect(string(outBytes)).To(ContainSubstring("SUCCESS: Egress is blocked."))
 			if tc.blackholingEnabled {
+				Expect(string(outBytes)).To(ContainSubstring("SUCCESS: Ingress is blocked."))
+			}
+			Expect(err).To(BeNil())
+
+			By(fmt.Sprintf("Switching to blackholingEnabled = %t", !tc.blackholingEnabled))
+			updatedShoot := defaultShoot(tc.shootName, !tc.blackholingEnabled, blockAddress)
+			err = f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
+				copy(shoot.Spec.Extensions, updatedShoot.Spec.Extensions)
+				return nil
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Check if filter-test fails or succeeds after switch!")
+
+			out, err = framework.PodExecByLabel(ctx, labels.SelectorFromSet(map[string]string{
+				v1beta1constants.LabelApp: "filter-test",
+			}),
+				"filter-block-test",
+				"/script/network-filter-test.sh",
+				values.HelmDeployNamespace,
+				f.ShootFramework.ShootClient,
+			)
+			outBytes, _ = io.ReadAll(out)
+			fmt.Println(string(outBytes))
+
+			Expect(string(outBytes)).To(ContainSubstring("SUCCESS: Egress is blocked."))
+			if !tc.blackholingEnabled {
 				Expect(string(outBytes)).To(ContainSubstring("SUCCESS: Ingress is blocked."))
 			}
 			Expect(err).To(BeNil())
