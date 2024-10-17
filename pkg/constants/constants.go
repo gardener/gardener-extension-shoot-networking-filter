@@ -24,7 +24,7 @@ const (
 	ImageEgressFilter = "egress-filter"
 
 	// FilterListSecretName name of the secret containing the egress filter list
-	FilterListSecretName = "egress-filter-list"
+	FilterListSecretName = "egress-filter-list" // #nosec G101 -- No credential.
 	// FilterNamespaceEnvName is the namespace of the extension deployment
 	FilterNamespaceEnvName = "FILTER_NAMESPACE"
 

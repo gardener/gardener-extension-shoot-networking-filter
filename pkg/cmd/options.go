@@ -73,7 +73,7 @@ func (o *PolicyFilterOptions) Complete() error {
 	if config.EgressFilter != nil && config.EgressFilter.DownloaderConfig != nil && o.OAuth2ConfigDir != "" {
 		secretData := &apisconfig.OAuth2Secret{}
 		filename := path.Join(o.OAuth2ConfigDir, constants.KeyClientID)
-		clientID, err := os.ReadFile(filename)
+		clientID, err := os.ReadFile(filename) // #nosec: G304 -- loading client id configuration from file is a feature. In reality files can be read from the pod's file system only.
 		if err != nil {
 			return fmt.Errorf("cannot read clientID from %s: %w", filename, err)
 		}

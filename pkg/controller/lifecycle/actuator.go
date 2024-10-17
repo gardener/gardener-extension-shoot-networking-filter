@@ -10,9 +10,12 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
+	gconst "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils"
@@ -87,6 +90,13 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		constants.KeyIPV4List: []byte("[]"),
 		constants.KeyIPV6List: []byte("[]"),
 	}
+	var workerGroupBlackholingEnabled map[string]bool
+
+	namespace := ex.GetNamespace()
+	cluster, err := controller.GetCluster(ctx, a.client, namespace)
+	if err != nil {
+		return fmt.Errorf("failed to get cluster config: %w", err)
+	}
 
 	shootConfig := &v1alpha1.Configuration{}
 	if ex.Spec.ProviderConfig != nil {
@@ -110,6 +120,24 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		if internalShootConfig.EgressFilter != nil {
 			blackholingEnabled = internalShootConfig.EgressFilter.BlackholingEnabled
 			staticFilterList = internalShootConfig.EgressFilter.StaticFilterList
+			if internalShootConfig.EgressFilter.WorkerSpecific != nil {
+				workerGroupBlackholingEnabled = make(map[string]bool)
+				for _, worker := range cluster.Shoot.Spec.Provider.Workers {
+					shootWG := worker.Name
+					found := false
+					for _, configWG := range internalShootConfig.EgressFilter.WorkerSpecific.Groups {
+						if strings.EqualFold(shootWG, configWG) {
+							found = true
+							break
+						}
+					}
+					if found {
+						workerGroupBlackholingEnabled[shootWG] = internalShootConfig.EgressFilter.WorkerSpecific.BlackholingEnabled
+					} else {
+						workerGroupBlackholingEnabled[shootWG] = blackholingEnabled
+					}
+				}
+			}
 		}
 
 		staticProvider, ok := a.provider.(*staticFilterListProvider)
@@ -128,12 +156,11 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		}
 	}
 
-	shootResources, err := getShootResources(blackholingEnabled, sleepDuration, constants.NamespaceKubeSystem, secretData)
+	shootResources, err := getShootResources(blackholingEnabled, sleepDuration, constants.NamespaceKubeSystem, secretData, workerGroupBlackholingEnabled)
 	if err != nil {
 		return err
 	}
 
-	namespace := ex.GetNamespace()
 	return managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, "gardener-extension-shoot-networking-filter", false, shootResources)
 }
 
@@ -248,10 +275,10 @@ func (a *actuator) collectSeedLoadBalancersIPs(ctx context.Context, namespaces [
 
 // GetShootResources creates resources needed for the egress filter daemonset.
 func GetShootResources(blackholingEnabled bool, sleepDuration, namespace string, secretData map[string][]byte) (map[string][]byte, error) {
-	return getShootResources(blackholingEnabled, sleepDuration, namespace, secretData)
+	return getShootResources(blackholingEnabled, sleepDuration, namespace, secretData, nil)
 }
 
-func getShootResources(blackholingEnabled bool, sleepDuration, namespace string, secretData map[string][]byte) (map[string][]byte, error) {
+func getShootResources(blackholingEnabled bool, sleepDuration, namespace string, secretData map[string][]byte, workerGroupBlackholingEnabled map[string]bool) (map[string][]byte, error) {
 	shootRegistry := managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
 
 	if secretData == nil {
@@ -276,11 +303,24 @@ func getShootResources(blackholingEnabled bool, sleepDuration, namespace string,
 	}
 	objects = append(objects, secret)
 
-	daemonset, err := buildDaemonset(checksumEgressFilter, blackholingEnabled, sleepDuration, namespace)
-	if err != nil {
-		return nil, err
+	// Two cases:
+	// Case A: No worker group-specific blocking => Only one DS for everyone
+	if workerGroupBlackholingEnabled == nil {
+		daemonset, err := buildDaemonset(checksumEgressFilter, blackholingEnabled, sleepDuration, namespace, "")
+		if err != nil {
+			return nil, err
+		}
+		objects = append(objects, daemonset)
+	} else {
+		// Case B: Worker group-specific blocking => One DS per worker group
+		for workerGroup, blackholingEnabled := range workerGroupBlackholingEnabled {
+			daemonset, err := buildDaemonset(checksumEgressFilter, blackholingEnabled, sleepDuration, namespace, workerGroup)
+			if err != nil {
+				return nil, err
+			}
+			objects = append(objects, daemonset)
+		}
 	}
-	objects = append(objects, daemonset)
 
 	shootResources, err := shootRegistry.AddAllAndSerialize(objects...)
 	if err != nil {
@@ -289,7 +329,7 @@ func getShootResources(blackholingEnabled bool, sleepDuration, namespace string,
 	return shootResources, nil
 }
 
-func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepDuration, namespace string) (client.Object, error) {
+func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepDuration, namespace string, workerGroup string) (client.Object, error) {
 	var (
 		requestCPU, _                        = resource.ParseQuantity("5m")
 		requestMemory, _                     = resource.ParseQuantity("20Mi")
@@ -421,6 +461,13 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 
 	ds.Spec.Template.Spec.SecurityContext.SeccompProfile = &corev1.SeccompProfile{
 		Type: corev1.SeccompProfileTypeRuntimeDefault,
+	}
+
+	if workerGroup != "" {
+		ds.Spec.Template.Spec.NodeSelector = map[string]string{
+			gconst.LabelWorkerPool: workerGroup,
+		}
+		ds.ObjectMeta.Name = fmt.Sprintf("%s-%s", ds.ObjectMeta.Name, workerGroup)
 	}
 
 	return ds, nil
