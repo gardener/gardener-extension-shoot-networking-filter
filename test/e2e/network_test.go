@@ -9,19 +9,15 @@ import (
 	"fmt"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"io"
-	"path/filepath"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 
+	"github.com/gardener/gardener-extension-shoot-networking-filter/test/templates"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
-	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/test/framework"
-	"github.com/gardener/gardener/test/utils/access"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/labels"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/gardener/gardener-extension-shoot-networking-filter/test/templates"
 )
 
 const (
@@ -46,7 +42,7 @@ var _ = Describe("Network Filter Tests", Label("Network"), func() {
 
 		f := defaultShootCreationFramework()
 
-		f.Shoot = defaultShoot(tc.shootName, tc.blackholingEnabled, blockAddress)
+		f.Shoot = defaultShoot(tc.shootName, tc.blackholingEnabled, blockAddress, false, false, nil)
 
 		It("Create Shoot, Test Policy Filter, Delete Shoot", Label(tc.shootName), func() {
 			By("Create Shoot")
@@ -59,41 +55,25 @@ var _ = Describe("Network Filter Tests", Label("Network"), func() {
 			ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
 			defer cancel()
 
-			var err error
-			f.GardenClient, err = kubernetes.NewClientFromFile("", f.ShootFramework.Config.GardenerConfig.GardenerKubeconfig,
-				kubernetes.WithClientOptions(client.Options{Scheme: kubernetes.GardenScheme}),
-				kubernetes.WithAllowedUserFields([]string{kubernetes.AuthTokenFile}),
-				kubernetes.WithDisabledCachedClient(),
-			)
-			Expect(err).NotTo(HaveOccurred())
-
-			f.ShootFramework.ShootClient, err = access.CreateShootClientFromAdminKubeconfig(ctx, f.GardenClient, f.Shoot)
-			Expect(err).NotTo(HaveOccurred())
-
-			resourceDir, err := filepath.Abs(filepath.Join(".."))
-			Expect(err).NotTo(HaveOccurred())
-			f.TemplatesDir = filepath.Join(resourceDir, "templates")
+			setupShootClient(ctx, f)
 
 			out := runNetworkFilterTest(ctx, f, tc.blackholingEnabled)
-			fmt.Println(out)
 
 			Expect(out).To(ContainSubstring("SUCCESS: Egress is blocked."))
 			if tc.blackholingEnabled {
 				Expect(out).To(ContainSubstring("SUCCESS: Ingress is blocked."))
 			}
-			Expect(err).To(BeNil())
 
 			By(fmt.Sprintf("Switching to blackholingEnabled = %t", !tc.blackholingEnabled))
-			updatedShoot := defaultShoot(tc.shootName, !tc.blackholingEnabled, blockAddress)
-			err = f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
+			updatedShoot := defaultShoot(tc.shootName, !tc.blackholingEnabled, blockAddress, false, false, nil)
+			err := f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
 				copy(shoot.Spec.Extensions, updatedShoot.Spec.Extensions)
 				return nil
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Check if filter-test fails or succeeds after switch!")
+			By("Test Policy Filter after switch")
 			out = runNetworkFilterTest(ctx, f, !tc.blackholingEnabled)
-			fmt.Println(out)
 
 			if tc.blackholingEnabled {
 				Expect(out).To(ContainSubstring("SUCCESS: No blackhole blocking mode artifacts remain."))
@@ -106,7 +86,6 @@ var _ = Describe("Network Filter Tests", Label("Network"), func() {
 			ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
 			defer cancel()
 			Expect(f.DeleteShootAndWaitForDeletion(ctx, f.Shoot)).To(Succeed())
-
 		})
 	}
 })
@@ -126,7 +105,6 @@ func runNetworkFilterTest(ctx context.Context, f *framework.ShootCreationFramewo
 
 	err := f.RenderAndDeployTemplate(ctx, f.ShootFramework.ShootClient, templates.NetworkTestName, values)
 	Expect(err).NotTo(HaveOccurred())
-	time.Sleep(30 * time.Second)
 
 	err = f.ShootFramework.WaitUntilDaemonSetIsRunning(
 		ctx,
@@ -136,7 +114,13 @@ func runNetworkFilterTest(ctx context.Context, f *framework.ShootCreationFramewo
 	)
 	Expect(err).NotTo(HaveOccurred())
 
-	By("Network-test daemonset is deployed successfully!")
+	defer func() {
+		By("Deleting filter-test daemonset")
+		err := f.ShootFramework.ShootClient.Kubernetes().AppsV1().DaemonSets(templates.NetworkTestNamespace).Delete(ctx, "filter-test", v1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+	}()
+
+	By("filter-test daemonset is deployed successfully!")
 
 	out, err := framework.PodExecByLabel(ctx, labels.SelectorFromSet(map[string]string{
 		v1beta1constants.LabelApp: "filter-test",
@@ -146,7 +130,9 @@ func runNetworkFilterTest(ctx context.Context, f *framework.ShootCreationFramewo
 		values.HelmDeployNamespace,
 		f.ShootFramework.ShootClient,
 	)
-	Expect(err).NotTo(HaveOccurred())
+	Expect(out).ToNot(BeNil())
 	outBytes, _ := io.ReadAll(out)
+	fmt.Println(string(outBytes))
+	Expect(err).NotTo(HaveOccurred())
 	return string(outBytes)
 }
