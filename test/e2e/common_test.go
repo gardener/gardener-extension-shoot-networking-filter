@@ -6,16 +6,21 @@ package e2e_test
 
 import (
 	"context"
-	"os"
-	"strconv"
-
+	"encoding/json"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config/v1alpha1"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/test/framework"
+	"github.com/gardener/gardener/test/utils/access"
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
+	"os"
+	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -40,9 +45,32 @@ func defaultShootCreationFramework() *framework.ShootCreationFramework {
 	})
 }
 
-func defaultShoot(generateName string, blackholing bool, blockAddress string) *gardencorev1beta1.Shoot {
+func defaultShoot(generateName string, blackholing bool, blockAddress string, useWgBlackholing, wgBlackholing bool, groups []string) *gardencorev1beta1.Shoot {
+	efc := &v1alpha1.Configuration{
+		EgressFilter: &v1alpha1.EgressFilter{
+			BlackholingEnabled: blackholing,
+			StaticFilterList: []v1alpha1.Filter{
+				{
+					Network: blockAddress + "/32",
+					Policy:  "BLOCK_ACCESS",
+				},
+				{
+					Network: "130.214.229.163/32",
+					Policy:  "BLOCK_ADDRESS",
+				},
+			},
+		},
+	}
 
-	filterConfig := `{"egressFilter":{"blackholingEnabled": ` + strconv.FormatBool(blackholing) + `,"staticFilterList": [{"network": "` + blockAddress + `/32", "policy": "BLOCK_ACCESS"},{"network": "130.214.229.163/32", "policy": "BLOCK_ACCESS"}]}}`
+	if useWgBlackholing {
+		efc.EgressFilter.WorkerSpecific = &v1alpha1.WorkerSpecific{
+			BlackholingEnabled: wgBlackholing,
+			Groups:             groups,
+		}
+	}
+
+	filterConfig, err := json.Marshal(efc)
+	Expect(err).NotTo(HaveOccurred())
 
 	return &gardencorev1beta1.Shoot{
 		ObjectMeta: metav1.ObjectMeta{
@@ -74,7 +102,7 @@ func defaultShoot(generateName string, blackholing bool, blockAddress string) *g
 			},
 			Extensions: []gardencorev1beta1.Extension{
 				{Type: "shoot-networking-filter",
-					ProviderConfig: &runtime.RawExtension{Raw: []byte(filterConfig)},
+					ProviderConfig: &runtime.RawExtension{Raw: filterConfig},
 				},
 			},
 			Provider: gardencorev1beta1.Provider{
@@ -93,4 +121,21 @@ func defaultShoot(generateName string, blackholing bool, blockAddress string) *g
 			},
 		},
 	}
+}
+
+func setupShootClient(ctx context.Context, f *framework.ShootCreationFramework) {
+	var err error
+	f.GardenClient, err = kubernetes.NewClientFromFile("", f.ShootFramework.Config.GardenerConfig.GardenerKubeconfig,
+		kubernetes.WithClientOptions(client.Options{Scheme: kubernetes.GardenScheme}),
+		kubernetes.WithAllowedUserFields([]string{kubernetes.AuthTokenFile}),
+		kubernetes.WithDisabledCachedClient(),
+	)
+	Expect(err).NotTo(HaveOccurred())
+
+	f.ShootFramework.ShootClient, err = access.CreateShootClientFromAdminKubeconfig(ctx, f.GardenClient, f.Shoot)
+	Expect(err).NotTo(HaveOccurred())
+
+	resourceDir, err := filepath.Abs(filepath.Join(".."))
+	Expect(err).NotTo(HaveOccurred())
+	f.TemplatesDir = filepath.Join(resourceDir, "templates")
 }
