@@ -26,6 +26,14 @@ spec:
         securityContext:
           privileged: true
 
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - |
+              which nc && which iptables-legacy && which ip && which ipset && which python3 && python3 -c 'import scapy'
+
         volumeMounts:
         - name: networking-test
           mountPath: /script
@@ -50,9 +58,9 @@ metadata:
   namespace: {{ .HelmDeployNamespace }}
 data:
   network-filter-test.sh: |
+    #!/bin/bash
     BLOCKED_IP={{ .BlockAddress }}
 
-    sleep 15
     echo "Testing egress to $BLOCKED_IP"
     old_msg=$(iptables-legacy -n  -t mangle -v -L POLICY_LOGGING | awk 'NR == 3 {print $1}')
     nc -z -w 3 $BLOCKED_IP 443
