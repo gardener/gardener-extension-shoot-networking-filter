@@ -7,17 +7,18 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"io"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 
-	"github.com/gardener/gardener-extension-shoot-networking-filter/test/templates"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/test/framework"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/gardener/gardener-extension-shoot-networking-filter/test/templates"
 )
 
 const (
