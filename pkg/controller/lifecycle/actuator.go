@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
@@ -28,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -90,7 +90,7 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		constants.KeyIPV4List: []byte("[]"),
 		constants.KeyIPV6List: []byte("[]"),
 	}
-	var workerGroupBlackholingEnabled map[string]bool
+	var blackholingEnabledByWorker map[string]bool
 
 	namespace := ex.GetNamespace()
 	cluster, err := controller.GetCluster(ctx, a.client, namespace)
@@ -120,21 +120,14 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		if internalShootConfig.EgressFilter != nil {
 			blackholingEnabled = internalShootConfig.EgressFilter.BlackholingEnabled
 			staticFilterList = internalShootConfig.EgressFilter.StaticFilterList
-			if internalShootConfig.EgressFilter.WorkerSpecific != nil {
-				workerGroupBlackholingEnabled = make(map[string]bool)
+			if internalShootConfig.EgressFilter.Workers != nil {
+				blackholingEnabledByWorker = make(map[string]bool)
+				workerSet := sets.New[string](internalShootConfig.EgressFilter.Workers.Names...)
 				for _, worker := range cluster.Shoot.Spec.Provider.Workers {
-					shootWG := worker.Name
-					found := false
-					for _, configWG := range internalShootConfig.EgressFilter.WorkerSpecific.Groups {
-						if strings.EqualFold(shootWG, configWG) {
-							found = true
-							break
-						}
-					}
-					if found {
-						workerGroupBlackholingEnabled[shootWG] = internalShootConfig.EgressFilter.WorkerSpecific.BlackholingEnabled
+					if workerSet.Has(worker.Name) {
+						blackholingEnabledByWorker[worker.Name] = internalShootConfig.EgressFilter.Workers.BlackholingEnabled
 					} else {
-						workerGroupBlackholingEnabled[shootWG] = blackholingEnabled
+						blackholingEnabledByWorker[worker.Name] = blackholingEnabled
 					}
 				}
 			}
@@ -156,7 +149,7 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		}
 	}
 
-	shootResources, err := getShootResources(blackholingEnabled, sleepDuration, constants.NamespaceKubeSystem, secretData, workerGroupBlackholingEnabled)
+	shootResources, err := getShootResources(blackholingEnabled, sleepDuration, constants.NamespaceKubeSystem, secretData, blackholingEnabledByWorker)
 	if err != nil {
 		return err
 	}

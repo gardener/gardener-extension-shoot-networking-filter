@@ -160,16 +160,16 @@ bool
 </tr>
 <tr>
 <td>
-<code>workerSpecific</code></br>
+<code>workers</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.WorkerSpecific">
-WorkerSpecific
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Workers">
+Workers
 </a>
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>WorkerSpecific contains worker-specific block modes</p>
+<p>Workers contains worker-specific block modes</p>
 </td>
 </tr>
 <tr>
@@ -326,7 +326,6 @@ Policy
 <a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
 </p>
 <p>
-<p>FilterListProviderType</p>
 </p>
 <h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Policy">Policy
 (<code>string</code> alias)</p></h3>
@@ -337,14 +336,14 @@ Policy
 <p>
 <p>Policy is the access policy</p>
 </p>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.WorkerSpecific">WorkerSpecific
+<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Workers">Workers
 </h3>
 <p>
 (<em>Appears on:</em>
 <a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
 </p>
 <p>
-<p>WorkerSpecific allows to set the blocking mode for specific worker groups which may differ from the default.</p>
+<p>Workers allows to set the blocking mode for specific worker groups which may differ from the default.</p>
 </p>
 <table>
 <thead>
@@ -367,13 +366,13 @@ bool
 </tr>
 <tr>
 <td>
-<code>groups</code></br>
+<code>names</code></br>
 <em>
 []string
 </em>
 </td>
 <td>
-<p>Groups is a list of worker groups to use the specified blocking mode.</p>
+<p>Names is a list of worker groups to use the specified blocking mode.</p>
 </td>
 </tr>
 </tbody>

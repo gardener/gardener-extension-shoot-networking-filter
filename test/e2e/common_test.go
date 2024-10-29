@@ -65,9 +65,9 @@ func defaultShoot(generateName string, blackholing bool, blockAddress string, us
 	}
 
 	if useWgBlackholing {
-		efc.EgressFilter.WorkerSpecific = &v1alpha1.WorkerSpecific{
+		efc.EgressFilter.Workers = &v1alpha1.Workers{
 			BlackholingEnabled: wgBlackholing,
-			Groups:             groups,
+			Names:              groups,
 		}
 	}
 
