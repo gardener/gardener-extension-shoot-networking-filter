@@ -15,11 +15,11 @@ import (
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
-	gconst "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/gardener/gardener/pkg/client/kubernetes"
+	kubernetesclient "github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils"
-	managedresources "github.com/gardener/gardener/pkg/utils/managedresources"
+	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -140,7 +140,7 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 			}
 		}
 
-		staticProvider, ok := a.provider.(*staticFilterListProvider)
+		staticProvider, ok := a.provider.(*StaticFilterListProvider)
 		if ok {
 			staticProvider.filterList = a.serviceConfig.EgressFilter.StaticFilterList
 			err := a.provider.Setup()
@@ -279,7 +279,7 @@ func GetShootResources(blackholingEnabled bool, sleepDuration, namespace string,
 }
 
 func getShootResources(blackholingEnabled bool, sleepDuration, namespace string, secretData map[string][]byte, workerGroupBlackholingEnabled map[string]bool) (map[string][]byte, error) {
-	shootRegistry := managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
+	shootRegistry := managedresources.NewRegistry(kubernetesclient.ShootScheme, kubernetesclient.ShootCodec, kubernetesclient.ShootSerializer)
 
 	if secretData == nil {
 		return nil, fmt.Errorf("missing filter list secret data")
@@ -331,12 +331,12 @@ func getShootResources(blackholingEnabled bool, sleepDuration, namespace string,
 
 func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepDuration, namespace string, workerGroup string) (client.Object, error) {
 	var (
-		requestCPU, _                        = resource.ParseQuantity("5m")
-		requestMemory, _                     = resource.ParseQuantity("20Mi")
-		limitMemory, _                       = resource.ParseQuantity("256Mi")
-		defaultMode      int32               = 0400
-		zero             int64               = 0
-		hostPathType     corev1.HostPathType = corev1.HostPathFileOrCreate
+		requestCPU, _          = resource.ParseQuantity("5m")
+		requestMemory, _       = resource.ParseQuantity("20Mi")
+		limitMemory, _         = resource.ParseQuantity("256Mi")
+		defaultMode      int32 = 0400
+		zero             int64 = 0
+		hostPathType           = corev1.HostPathFileOrCreate
 	)
 
 	labels := map[string]string{
@@ -465,9 +465,9 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 
 	if workerGroup != "" {
 		ds.Spec.Template.Spec.NodeSelector = map[string]string{
-			gconst.LabelWorkerPool: workerGroup,
+			v1beta1constants.LabelWorkerPool: workerGroup,
 		}
-		ds.ObjectMeta.Name = fmt.Sprintf("%s-%s", ds.ObjectMeta.Name, workerGroup)
+		ds.Name = fmt.Sprintf("%s-%s", ds.Name, workerGroup)
 	}
 
 	return ds, nil

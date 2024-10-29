@@ -5,7 +5,7 @@
 package v1alpha1
 
 import (
-	healthcheckconfigv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
+	extensionsconfigv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -22,7 +22,7 @@ type Configuration struct {
 
 	// HealthCheckConfig is the config for the health check controller.
 	// +optional
-	HealthCheckConfig *healthcheckconfigv1alpha1.HealthCheckConfig `json:"healthCheckConfig,omitempty"`
+	HealthCheckConfig *extensionsconfigv1alpha1.HealthCheckConfig `json:"healthCheckConfig,omitempty"`
 }
 
 // EgressFilter contains the configuration for the egress filter.
@@ -56,13 +56,12 @@ type EgressFilter struct {
 	EnsureConnectivity *EnsureConnectivity `json:"ensureConnectivity,omitempty"`
 }
 
-// FilterListProviderType
 type FilterListProviderType string
 
 const (
 	// FilterListProviderTypeStatic is the provider type for static filter list
 	FilterListProviderTypeStatic FilterListProviderType = "static"
-	// FilterListProviderTypeDownload is the provider type for downloading the filter list from an URL
+	// FilterListProviderTypeDownload is the provider type for downloading the filter list from a URL
 	FilterListProviderTypeDownload FilterListProviderType = "download"
 )
 

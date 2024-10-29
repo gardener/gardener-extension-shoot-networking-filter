@@ -50,11 +50,11 @@ var _ = Describe("Filter methods", func() {
 		}
 	)
 
-	DescribeTable("#generateEgressFilterValues", func(filterList []config.Filter, expected_ipv4List, expected_ipv6List []string) {
+	DescribeTable("#generateEgressFilterValues", func(filterList []config.Filter, expectedIpv4List, expectedIpv6List []string) {
 		ipv4List, ipv6List, err := generateEgressFilterValues(filterList, logger)
 		Expect(err).To(BeNil())
-		Expect(ipv4List).To(Equal(expected_ipv4List))
-		Expect(ipv6List).To(Equal(expected_ipv6List))
+		Expect(ipv4List).To(Equal(expectedIpv4List))
+		Expect(ipv6List).To(Equal(expectedIpv6List))
 	},
 		Entry("nil", nil, []string{}, []string{}),
 		Entry("empty list", emptyList, []string{}, []string{}),
@@ -143,14 +143,14 @@ var _ = Describe("Filter methods", func() {
 - 2001:db8::ff00:42:8328/128
 `,
 		}
-		expected_append1 = map[string]string{
+		expectedAppend1 = map[string]string{
 			constants.KeyIPV4List: `- 11.1.2.3/32
 - 12.5.6.7/32
 `,
 			constants.KeyIPV6List: `- 2001:db8::ff00:42:8328/128
 `,
 		}
-		expected_append2 = map[string]string{
+		expectedAppend2 = map[string]string{
 			constants.KeyIPV4List: `- 1.2.3.4/30
 - 1.2.3.8/30
 - 11.1.2.3/32
@@ -201,8 +201,8 @@ var _ = Describe("Filter methods", func() {
 		Expect(out).To(Equal(expected))
 	},
 		Entry("empty", empty, nil, empty),
-		Entry("empty", empty, appendList, expected_append1),
-		Entry("input1", input1, appendList, expected_append2),
+		Entry("empty", empty, appendList, expectedAppend1),
+		Entry("input1", input1, appendList, expectedAppend2),
 	)
 
 })

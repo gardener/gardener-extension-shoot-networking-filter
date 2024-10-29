@@ -84,21 +84,21 @@ func (p *basicFilterListProvider) createOrUpdateFilterListSecret(ctx context.Con
 	return err
 }
 
-type staticFilterListProvider struct {
+type StaticFilterListProvider struct {
 	basicFilterListProvider
 	filterList []config.Filter
 }
 
-var _ FilterListProvider = &staticFilterListProvider{}
+var _ FilterListProvider = &StaticFilterListProvider{}
 
 func NewStaticFilterListProvider(ctx context.Context, client client.Client, logger logr.Logger,
-	filterList []config.Filter) *staticFilterListProvider {
+	filterList []config.Filter) *StaticFilterListProvider {
 	return newStaticFilterListProvider(ctx, client, logger, filterList)
 }
 
 func newStaticFilterListProvider(ctx context.Context, client client.Client, logger logr.Logger,
-	filterList []config.Filter) *staticFilterListProvider {
-	return &staticFilterListProvider{
+	filterList []config.Filter) *StaticFilterListProvider {
+	return &StaticFilterListProvider{
 		basicFilterListProvider: basicFilterListProvider{
 			ctx:    ctx,
 			client: client,
@@ -108,7 +108,7 @@ func newStaticFilterListProvider(ctx context.Context, client client.Client, logg
 	}
 }
 
-func (p *staticFilterListProvider) Setup() error {
+func (p *StaticFilterListProvider) Setup() error {
 	err := p.createOrUpdateFilterListSecret(p.ctx, p.filterList)
 	if err != nil {
 		p.logger.Info("secret update failed", "error", err)
@@ -117,7 +117,7 @@ func (p *staticFilterListProvider) Setup() error {
 	return nil
 }
 
-type downloaderFilterListProvider struct {
+type DownloaderFilterListProvider struct {
 	basicFilterListProvider
 	downloaderConfig *config.DownloaderConfig
 	oauth2Secret     *config.OAuth2Secret
@@ -125,17 +125,17 @@ type downloaderFilterListProvider struct {
 	tickerDone       chan bool
 }
 
-var _ FilterListProvider = &downloaderFilterListProvider{}
+var _ FilterListProvider = &DownloaderFilterListProvider{}
 
 func NewDownloaderFilterListProvider(ctx context.Context, client client.Client, logger logr.Logger,
-	downloaderConfig *config.DownloaderConfig, oauth2Secret *config.OAuth2Secret) *downloaderFilterListProvider {
+	downloaderConfig *config.DownloaderConfig, oauth2Secret *config.OAuth2Secret) *DownloaderFilterListProvider {
 	return newDownloaderFilterListProvider(ctx, client, logger, downloaderConfig, oauth2Secret)
 }
 
 func newDownloaderFilterListProvider(ctx context.Context, client client.Client, logger logr.Logger,
-	downloaderConfig *config.DownloaderConfig, oauth2Secret *config.OAuth2Secret) *downloaderFilterListProvider {
+	downloaderConfig *config.DownloaderConfig, oauth2Secret *config.OAuth2Secret) *DownloaderFilterListProvider {
 
-	return &downloaderFilterListProvider{
+	return &DownloaderFilterListProvider{
 		basicFilterListProvider: basicFilterListProvider{
 			ctx:    ctx,
 			client: client,
@@ -146,7 +146,7 @@ func newDownloaderFilterListProvider(ctx context.Context, client client.Client, 
 	}
 }
 
-func (p *downloaderFilterListProvider) Setup() error {
+func (p *DownloaderFilterListProvider) Setup() error {
 	if p.downloaderConfig == nil {
 		return fmt.Errorf("missing egressFilter.downloaderConfig")
 	}
@@ -174,7 +174,7 @@ func (p *downloaderFilterListProvider) Setup() error {
 	return nil
 }
 
-func (p *downloaderFilterListProvider) stopTicker() {
+func (p *DownloaderFilterListProvider) stopTicker() {
 	if p.ticker != nil {
 		p.ticker.Stop()
 		p.tickerDone <- true
@@ -182,7 +182,7 @@ func (p *downloaderFilterListProvider) stopTicker() {
 	}
 }
 
-func (p *downloaderFilterListProvider) downloadAndStore() error {
+func (p *DownloaderFilterListProvider) downloadAndStore() error {
 	filterList, err := p.download()
 	metrics.ReportDownload(err == nil)
 	if err != nil {
@@ -199,7 +199,7 @@ func (p *downloaderFilterListProvider) downloadAndStore() error {
 	return nil
 }
 
-func (p *downloaderFilterListProvider) download() ([]config.Filter, error) {
+func (p *DownloaderFilterListProvider) download() ([]config.Filter, error) {
 	req, err := http.NewRequest(http.MethodGet, p.downloaderConfig.Endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -229,7 +229,7 @@ func (p *downloaderFilterListProvider) download() ([]config.Filter, error) {
 	return filterList, nil
 }
 
-func (p *downloaderFilterListProvider) getAccessToken(endpoint string, oauth2secret *config.OAuth2Secret) (string, error) {
+func (p *DownloaderFilterListProvider) getAccessToken(endpoint string, oauth2secret *config.OAuth2Secret) (string, error) {
 	if oauth2secret == nil {
 		return "", fmt.Errorf("OAuth2 secret data is missing")
 	}
@@ -242,7 +242,7 @@ func (p *downloaderFilterListProvider) getAccessToken(endpoint string, oauth2sec
 			constants.KeyClientCert, constants.KeyClientCertKey)
 	}
 
-	clientcredConfig := clientcredentials.Config{
+	clientCredConfig := clientcredentials.Config{
 		ClientID:     oauth2secret.ClientID,
 		ClientSecret: oauth2secret.ClientSecret,
 		TokenURL:     endpoint,
@@ -251,9 +251,9 @@ func (p *downloaderFilterListProvider) getAccessToken(endpoint string, oauth2sec
 	if len(oauth2secret.ClientCert) != 0 {
 		cert, err := tls.X509KeyPair(oauth2secret.ClientCert, oauth2secret.ClientCertKey)
 		if err != nil {
-			return "", fmt.Errorf("building client certificate failed: %w", err)
+			return "", fmt.Errorf("building httpClient certificate failed: %w", err)
 		}
-		client := &http.Client{
+		httpClient := &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
 					Certificates: []tls.Certificate{cert},
@@ -261,13 +261,13 @@ func (p *downloaderFilterListProvider) getAccessToken(endpoint string, oauth2sec
 				},
 			},
 		}
-		ctx = context.WithValue(p.ctx, oauth2.HTTPClient, client)
-		clientcredConfig.AuthStyle = oauth2.AuthStyleInParams
+		ctx = context.WithValue(p.ctx, oauth2.HTTPClient, httpClient)
+		clientCredConfig.AuthStyle = oauth2.AuthStyleInParams
 	} else {
-		clientcredConfig.AuthStyle = oauth2.AuthStyleInHeader
+		clientCredConfig.AuthStyle = oauth2.AuthStyleInHeader
 	}
 
-	token, err := clientcredConfig.Token(ctx)
+	token, err := clientCredConfig.Token(ctx)
 	if err != nil {
 		return "", err
 	}

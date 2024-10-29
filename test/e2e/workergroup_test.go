@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Worker Group Specific Tests", Label("Network"), func() {
@@ -54,7 +54,7 @@ var _ = Describe("Worker Group Specific Tests", Label("Network"), func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verify that there is only one daemon set")
-		dsList, err := f.ShootFramework.ShootClient.Kubernetes().AppsV1().DaemonSets("kube-system").List(ctx, v1.ListOptions{})
+		dsList, err := f.ShootFramework.ShootClient.Kubernetes().AppsV1().DaemonSets("kube-system").List(ctx, metav1.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		found := 0
 		for _, ds := range dsList.Items {
@@ -74,7 +74,7 @@ var _ = Describe("Worker Group Specific Tests", Label("Network"), func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Verify that there are now two daemon sets")
-		dsList, err = f.ShootFramework.ShootClient.Kubernetes().AppsV1().DaemonSets("kube-system").List(ctx, v1.ListOptions{})
+		dsList, err = f.ShootFramework.ShootClient.Kubernetes().AppsV1().DaemonSets("kube-system").List(ctx, metav1.ListOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		var filterDS []appsv1.DaemonSet
 		for _, ds := range dsList.Items {

@@ -15,7 +15,7 @@ import (
 	"github.com/gardener/gardener/test/framework"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/test/templates"
@@ -117,7 +117,7 @@ func runNetworkFilterTest(ctx context.Context, f *framework.ShootCreationFramewo
 
 	defer func() {
 		By("Deleting filter-test daemonset")
-		err := f.ShootFramework.ShootClient.Kubernetes().AppsV1().DaemonSets(templates.NetworkTestNamespace).Delete(ctx, "filter-test", v1.DeleteOptions{})
+		err := f.ShootFramework.ShootClient.Kubernetes().AppsV1().DaemonSets(templates.NetworkTestNamespace).Delete(ctx, "filter-test", metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	}()
 

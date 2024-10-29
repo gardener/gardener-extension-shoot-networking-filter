@@ -15,7 +15,7 @@ import (
 
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/logger"
-	managedresources "github.com/gardener/gardener/pkg/utils/managedresources"
+	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -53,15 +53,15 @@ func getClient() (client.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	config, err := rest.InClusterConfig()
+	clusterConfig, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
 	}
-	client, err := client.New(config, client.Options{Scheme: clientScheme})
+	c, err := client.New(clusterConfig, client.Options{Scheme: clientScheme})
 	if err != nil {
 		return nil, err
 	}
-	return client, nil
+	return c, nil
 }
 
 func newNetworkFilter() networkFilter {
@@ -96,9 +96,9 @@ func (n networkFilter) startNetworkFilter() error {
 		return fmt.Errorf("getting namespace failed: %w", err)
 	}
 	n.logger.Info("Get Client.")
-	client, err := getClient()
+	cl, err := getClient()
 	if err != nil {
-		return fmt.Errorf("getting client failed: %w", err)
+		return fmt.Errorf("getting cl failed: %w", err)
 	}
 	n.logger.Info("Get Config.")
 	pfconfig, err := getPFConfig(*n.configLocation, *n.oAuth2ConfigDir)
@@ -118,12 +118,12 @@ func (n networkFilter) startNetworkFilter() error {
 
 	switch serviceConfig.EgressFilter.FilterListProviderType {
 	case config.FilterListProviderTypeStatic:
-		provider = lifecycle.NewStaticFilterListProvider(ctx, client, n.logger, serviceConfig.EgressFilter.StaticFilterList)
+		provider = lifecycle.NewStaticFilterListProvider(ctx, cl, n.logger, serviceConfig.EgressFilter.StaticFilterList)
 	case config.FilterListProviderTypeDownload:
 		if serviceConfig.EgressFilter.DownloaderConfig.RefreshPeriod != nil && serviceConfig.EgressFilter.DownloaderConfig.RefreshPeriod.Duration > n.refreshPeriod {
 			n.refreshPeriod = serviceConfig.EgressFilter.DownloaderConfig.RefreshPeriod.Duration
 		}
-		provider = lifecycle.NewDownloaderFilterListProvider(ctx, client, n.logger,
+		provider = lifecycle.NewDownloaderFilterListProvider(ctx, cl, n.logger,
 			serviceConfig.EgressFilter.DownloaderConfig, oauth2secret)
 	default:
 		return fmt.Errorf("unexpected FilterListProviderType: %s", serviceConfig.EgressFilter.FilterListProviderType)
@@ -144,7 +144,7 @@ func (n networkFilter) startNetworkFilter() error {
 			return fmt.Errorf("failed creating shoot resources: %w", err)
 		}
 		n.logger.Info("Update managedresource.")
-		err = managedresources.Create(ctx, client, networkFilterNamespace, "networking-filter", nil, true, *n.resourceClass, shootResources, func() *bool { v := false; return &v }(), nil, nil)
+		err = managedresources.Create(ctx, cl, networkFilterNamespace, "networking-filter", nil, true, *n.resourceClass, shootResources, func() *bool { v := false; return &v }(), nil, nil)
 		if err != nil {
 			return fmt.Errorf("failed creating managedresource: %w", err)
 		}
@@ -156,8 +156,8 @@ func (n networkFilter) startNetworkFilter() error {
 
 func main() {
 	log.SetLogger(logger.MustNewZapLogger(logger.InfoLevel, logger.FormatJSON))
-	logger := log.Log.WithName("Networking-Filter")
-	logger.Info("Starting Network filter")
+	loggr := log.Log.WithName("Networking-Filter")
+	loggr.Info("Starting Network filter")
 
 	n := newNetworkFilter()
 	err := n.startNetworkFilter()

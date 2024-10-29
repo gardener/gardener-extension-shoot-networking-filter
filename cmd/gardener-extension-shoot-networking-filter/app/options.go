@@ -7,8 +7,8 @@ package app
 import (
 	"os"
 
-	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
-	heartbeatcmd "github.com/gardener/gardener/extensions/pkg/controller/heartbeat/cmd"
+	extensionscmdcontroller "github.com/gardener/gardener/extensions/pkg/controller/cmd"
+	extensionsheartbeatcmd "github.com/gardener/gardener/extensions/pkg/controller/heartbeat/cmd"
 
 	pfcmd "github.com/gardener/gardener-extension-shoot-networking-filter/pkg/cmd"
 )
@@ -18,62 +18,62 @@ const ExtensionName = "shoot-networking-filter"
 
 // Options holds configuration passed to the Networking Policy Filter controller.
 type Options struct {
-	generalOptions     *controllercmd.GeneralOptions
+	generalOptions     *extensionscmdcontroller.GeneralOptions
 	pfOptions          *pfcmd.PolicyFilterOptions
-	restOptions        *controllercmd.RESTOptions
-	managerOptions     *controllercmd.ManagerOptions
-	controllerOptions  *controllercmd.ControllerOptions
-	lifecycleOptions   *controllercmd.ControllerOptions
-	healthOptions      *controllercmd.ControllerOptions
-	heartbeatOptions   *heartbeatcmd.Options
-	controllerSwitches *controllercmd.SwitchOptions
-	reconcileOptions   *controllercmd.ReconcilerOptions
-	optionAggregator   controllercmd.OptionAggregator
+	restOptions        *extensionscmdcontroller.RESTOptions
+	managerOptions     *extensionscmdcontroller.ManagerOptions
+	controllerOptions  *extensionscmdcontroller.ControllerOptions
+	lifecycleOptions   *extensionscmdcontroller.ControllerOptions
+	healthOptions      *extensionscmdcontroller.ControllerOptions
+	heartbeatOptions   *extensionsheartbeatcmd.Options
+	controllerSwitches *extensionscmdcontroller.SwitchOptions
+	reconcileOptions   *extensionscmdcontroller.ReconcilerOptions
+	optionAggregator   extensionscmdcontroller.OptionAggregator
 }
 
 // NewOptions creates a new Options instance.
 func NewOptions() *Options {
 	options := &Options{
-		generalOptions: &controllercmd.GeneralOptions{},
+		generalOptions: &extensionscmdcontroller.GeneralOptions{},
 		pfOptions:      &pfcmd.PolicyFilterOptions{},
-		restOptions:    &controllercmd.RESTOptions{},
-		managerOptions: &controllercmd.ManagerOptions{
+		restOptions:    &extensionscmdcontroller.RESTOptions{},
+		managerOptions: &extensionscmdcontroller.ManagerOptions{
 			// These are default values.
 			LeaderElection:          true,
-			LeaderElectionID:        controllercmd.LeaderElectionNameID(ExtensionName),
+			LeaderElectionID:        extensionscmdcontroller.LeaderElectionNameID(ExtensionName),
 			LeaderElectionNamespace: os.Getenv("LEADER_ELECTION_NAMESPACE"),
 		},
-		controllerOptions: &controllercmd.ControllerOptions{
+		controllerOptions: &extensionscmdcontroller.ControllerOptions{
 			// This is a default value.
 			MaxConcurrentReconciles: 5,
 		},
-		lifecycleOptions: &controllercmd.ControllerOptions{
+		lifecycleOptions: &extensionscmdcontroller.ControllerOptions{
 			// This is a default value.
 			MaxConcurrentReconciles: 5,
 		},
-		healthOptions: &controllercmd.ControllerOptions{
+		healthOptions: &extensionscmdcontroller.ControllerOptions{
 			// This is a default value.
 			MaxConcurrentReconciles: 5,
 		},
-		heartbeatOptions: &heartbeatcmd.Options{
+		heartbeatOptions: &extensionsheartbeatcmd.Options{
 			ExtensionName: ExtensionName,
 			// This is a default value.
 			RenewIntervalSeconds: 30,
 			Namespace:            os.Getenv("LEADER_ELECTION_NAMESPACE"),
 		},
-		reconcileOptions:   &controllercmd.ReconcilerOptions{},
+		reconcileOptions:   &extensionscmdcontroller.ReconcilerOptions{},
 		controllerSwitches: pfcmd.ControllerSwitches(),
 	}
 
-	options.optionAggregator = controllercmd.NewOptionAggregator(
+	options.optionAggregator = extensionscmdcontroller.NewOptionAggregator(
 		options.generalOptions,
 		options.pfOptions,
 		options.restOptions,
 		options.managerOptions,
 		options.controllerOptions,
-		controllercmd.PrefixOption("lifecycle-", options.lifecycleOptions),
-		controllercmd.PrefixOption("healthcheck-", options.healthOptions),
-		controllercmd.PrefixOption("heartbeat-", options.heartbeatOptions),
+		extensionscmdcontroller.PrefixOption("lifecycle-", options.lifecycleOptions),
+		extensionscmdcontroller.PrefixOption("healthcheck-", options.healthOptions),
+		extensionscmdcontroller.PrefixOption("heartbeat-", options.heartbeatOptions),
 		options.controllerSwitches,
 		options.reconcileOptions,
 	)

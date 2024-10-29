@@ -48,27 +48,27 @@ func generateEgressFilterValues(entries []config.Filter, logger logr.Logger) ([]
 OUTER:
 	for _, entry := range entries {
 		if entry.Policy == config.PolicyBlockAccess {
-			ip, net, err := net.ParseCIDR(entry.Network)
+			ip, ipnet, err := net.ParseCIDR(entry.Network)
 			if err != nil {
 				logger.Error(err, "Error parsing CIDR from filter list, ignoring it", "offending CIDR", entry.Network)
 				continue
 			}
 			if ip.To4() != nil {
 				for _, privateNet := range privateIPv4Ranges {
-					if privateNet.Contains(ip) || net.Contains(privateNet.IP) {
-						logger.Info("Identified overlapping CIDR in filter list, ignoring it", "offending CIDR", net.String(), "reserved range", privateNet.String())
+					if privateNet.Contains(ip) || ipnet.Contains(privateNet.IP) {
+						logger.Info("Identified overlapping CIDR in filter list, ignoring it", "offending CIDR", ipnet.String(), "reserved range", privateNet.String())
 						continue OUTER
 					}
 				}
-				ipv4 = append(ipv4, net.String())
+				ipv4 = append(ipv4, ipnet.String())
 			} else {
 				for _, privateNet := range privateIPv6Ranges {
-					if privateNet.Contains(ip) || net.Contains(privateNet.IP) {
-						logger.Info("Identified overlapping CIDR in filter list, ignoring it", "offending CIDR", net.String(), "reserved range", privateNet.String())
+					if privateNet.Contains(ip) || ipnet.Contains(privateNet.IP) {
+						logger.Info("Identified overlapping CIDR in filter list, ignoring it", "offending CIDR", ipnet.String(), "reserved range", privateNet.String())
 						continue OUTER
 					}
 				}
-				ipv6 = append(ipv6, net.String())
+				ipv6 = append(ipv6, ipnet.String())
 			}
 		}
 	}
