@@ -383,6 +383,18 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 							Operator: corev1.TolerationOpExists,
 						},
 					},
+					Affinity: &corev1.Affinity{
+						PodAntiAffinity: &corev1.PodAntiAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+								{
+									LabelSelector: &metav1.LabelSelector{
+										MatchLabels: labels,
+									},
+									TopologyKey: corev1.LabelHostname,
+								},
+							},
+						},
+					},
 					AutomountServiceAccountToken: ptr.To(false),
 					Containers: []corev1.Container{{
 						Name:            constants.ApplicationName,
