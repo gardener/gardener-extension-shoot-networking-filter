@@ -17,8 +17,6 @@ Please find more information regarding the extensibility concepts and a detailed
 
 ## Extension Resources
 
-Currently there is nothing to specify in the extension spec.
-
 Example extension resource:
 
 ```yaml
@@ -28,9 +26,23 @@ metadata:
   name: extension-shoot-networking-filter
   namespace: shoot--project--abc
 spec:
+  providerConfig:
+    egressFilter:
+      blackholingEnabled: false
+      staticFilterList:
+      - network: 1.2.3.4/31
+        policy: BLOCK_ACCESS
+      workers:
+        blackholingEnabled: true
+        names:
+        - external-api
 ```
 
-When an extension resource is reconciled, the extension controller will create a daemonset `egress-filter-applier` on the shoot containing a [Dockerfile](https://github.com/gardener/egress-filter-refresher/blob/master/Dockerfile) container.
+When an extension resource is reconciled, if the optional `workers` field is not used, the extension controller will create a daemonset `egress-filter-applier` on the shoot containing a [Dockerfile](https://github.com/gardener/egress-filter-refresher/blob/master/Dockerfile) container.
+
+If the optional `workers` field is used, the extension controller will create one daemonset `egress-filter-applier-<worker name>` per **each worker group** on the shoot.
+
+See the [usage documentation](docs/usage/shoot-networking-filter.md) for more details on how to configure the extension on a shoot cluster.
 
 
 Please note, this extension controller relies on the [Gardener-Resource-Manager](https://github.com/gardener/gardener/blob/master/docs/concepts/resource-manager.md) to deploy k8s resources to seed and shoot clusters.

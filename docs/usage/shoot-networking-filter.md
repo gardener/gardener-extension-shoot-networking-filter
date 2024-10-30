@@ -60,7 +60,7 @@ Conversely, when you re-enable `blackholing` again, the iptables-based filter ru
 
 You can optionally enable or disable ingress filtering for specified worker groups.
 For example, you may want to disable blackholing in general but enable it for a worker group hosting an external API.
-You can do so my using an optional `workerSpecific` field:
+You can do so by using an optional `workers` field:
 
 ```yaml
 apiVersion: core.gardener.cloud/v1beta1
@@ -72,15 +72,15 @@ spec:
       providerConfig:
         egressFilter:
           blackholingEnabled: false
-          workerSpecific:
+          workers:
             blackholingEnabled: true
-            groups:
+            names:
               - external-api
 ...
 ```
 
-Please note that only blackholing options can be changed per worker group. You may not define different IPs to block or
-disable blocking altogether for certain worker groups.
+Please note that only blackholing can be changed per worker group. You may not define different IPs to block or
+disable blocking altogether.
 
 ## Custom IP 
 
