@@ -43,7 +43,7 @@ var _ = Describe("Network Filter Tests", Label("Network"), func() {
 
 		f := defaultShootCreationFramework()
 
-		f.Shoot = defaultShoot(tc.shootName, tc.blackholingEnabled, blockAddress, false, false, nil)
+		f.Shoot = defaultShoot(tc.shootName, tc.blackholingEnabled, blockAddress)
 
 		It("Create Shoot, Test Policy Filter, Delete Shoot", Label(tc.shootName), func() {
 			By("Create Shoot")
@@ -66,7 +66,7 @@ var _ = Describe("Network Filter Tests", Label("Network"), func() {
 			}
 
 			By(fmt.Sprintf("Switching to blackholingEnabled = %t", !tc.blackholingEnabled))
-			updatedShoot := defaultShoot(tc.shootName, !tc.blackholingEnabled, blockAddress, false, false, nil)
+			updatedShoot := defaultShoot(tc.shootName, !tc.blackholingEnabled, blockAddress)
 			err := f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
 				copy(shoot.Spec.Extensions, updatedShoot.Spec.Extensions)
 				return nil

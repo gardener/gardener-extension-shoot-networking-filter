@@ -21,7 +21,7 @@ var _ = Describe("Worker Group Specific Tests", Label("Network"), func() {
 
 	f := defaultShootCreationFramework()
 
-	f.Shoot = defaultShoot("e2e-worker-group", false, blockAddress, false, false, nil)
+	f.Shoot = defaultShoot("e2e-worker-group", false, blockAddress)
 
 	It("Create Shoot, Enable per-worker-group blocking, Delete Shoot", Label("e2e-worker-group"), func() {
 		By("Create Shoot")
@@ -66,7 +66,7 @@ var _ = Describe("Worker Group Specific Tests", Label("Network"), func() {
 
 		By("Enable per-worker-group blocking")
 		groups := []string{"blackholed"}
-		updatedShoot := defaultShoot("e2e-worker-group", false, blockAddress, true, true, groups)
+		updatedShoot := workerSpecificShoot("e2e-worker-group", false, blockAddress, true, groups)
 		err = f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
 			shoot.Spec.Extensions = updatedShoot.Spec.Extensions
 			return nil

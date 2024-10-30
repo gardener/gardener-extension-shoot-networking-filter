@@ -47,7 +47,15 @@ func defaultShootCreationFramework() *framework.ShootCreationFramework {
 	})
 }
 
-func defaultShoot(generateName string, blackholing bool, blockAddress string, useWgBlackholing, wgBlackholing bool, groups []string) *gardencorev1beta1.Shoot {
+func defaultShoot(generateName string, blackholing bool, blockAddress string) *gardencorev1beta1.Shoot {
+	return createShoot(generateName, blackholing, blockAddress, false, false, nil)
+}
+
+func workerSpecificShoot(generateName string, blackholing bool, blockAddress string, wgBlackholing bool, groups []string) *gardencorev1beta1.Shoot {
+	return createShoot(generateName, blackholing, blockAddress, true, wgBlackholing, groups)
+}
+
+func createShoot(generateName string, blackholing bool, blockAddress string, useWgBlackholing, wgBlackholing bool, groups []string) *gardencorev1beta1.Shoot {
 	efc := &v1alpha1.Configuration{
 		EgressFilter: &v1alpha1.EgressFilter{
 			BlackholingEnabled: blackholing,
