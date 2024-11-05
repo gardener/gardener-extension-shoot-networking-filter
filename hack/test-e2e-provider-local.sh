@@ -43,6 +43,7 @@ kubectl apply -f "$repo_root/tmp/controller-registration.yaml"
 
 echo '172.18.255.1 api.e2e-default.local.external.local.gardener.cloud' >> /etc/hosts
 echo '172.18.255.1 api.e2e-blackholing.local.external.local.gardener.cloud' >> /etc/hosts
+echo '127.0.0.1 garden.local.gardener.cloud' >> /etc/hosts
 
 # reduce flakiness in contended pipelines
 export GOMEGA_DEFAULT_EVENTUALLY_TIMEOUT=5s
