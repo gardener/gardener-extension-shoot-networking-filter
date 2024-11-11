@@ -5,7 +5,7 @@
 package v1alpha1
 
 import (
-	healthcheckconfigv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
+	extensionsconfigv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -22,13 +22,17 @@ type Configuration struct {
 
 	// HealthCheckConfig is the config for the health check controller.
 	// +optional
-	HealthCheckConfig *healthcheckconfigv1alpha1.HealthCheckConfig `json:"healthCheckConfig,omitempty"`
+	HealthCheckConfig *extensionsconfigv1alpha1.HealthCheckConfig `json:"healthCheckConfig,omitempty"`
 }
 
 // EgressFilter contains the configuration for the egress filter.
 type EgressFilter struct {
 	// BlackholingEnabled is a flag to set blackholing or firewall approach.
 	BlackholingEnabled bool `json:"blackholingEnabled"`
+
+	// Workers contains worker-specific block modes
+	// +optional
+	Workers *Workers `json:"workers,omitempty"`
 
 	// SleepDuration is the time interval between policy updates.
 	SleepDuration *metav1.Duration `json:"sleepDuration,omitempty"`
@@ -52,13 +56,12 @@ type EgressFilter struct {
 	EnsureConnectivity *EnsureConnectivity `json:"ensureConnectivity,omitempty"`
 }
 
-// FilterListProviderType
 type FilterListProviderType string
 
 const (
 	// FilterListProviderTypeStatic is the provider type for static filter list
 	FilterListProviderTypeStatic FilterListProviderType = "static"
-	// FilterListProviderTypeDownload is the provider type for downloading the filter list from an URL
+	// FilterListProviderTypeDownload is the provider type for downloading the filter list from a URL
 	FilterListProviderTypeDownload FilterListProviderType = "download"
 )
 
@@ -99,4 +102,13 @@ type EnsureConnectivity struct {
 	// SeedNamespaces contains the seed namespaces to check for load balancers.
 	// +optional
 	SeedNamespaces []string `json:"seedNamespaces,omitempty"`
+}
+
+// Workers allows to set the blocking mode for specific worker groups which may differ from the default.
+type Workers struct {
+	// BlackholingEnabled is a flag to set blackholing or firewall approach.
+	BlackholingEnabled bool `json:"blackholingEnabled"`
+
+	// Names is a list of worker groups to use the specified blocking mode.
+	Names []string `json:"names"`
 }

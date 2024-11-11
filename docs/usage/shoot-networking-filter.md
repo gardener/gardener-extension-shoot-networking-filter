@@ -53,8 +53,34 @@ The default on AWS is a classic load balancer that replaces the source IP by it'
 configured adding the annotation `service.beta.kubernetes.io/aws-load-balancer-type: "nlb"` to the service.
 On OpenStack, load balancers don't preserve the source address.
 
-Please note that if you disable `blackholing` in an existing shoot, the associated blackhole routes will not be removed automatically. 
-To remove these routes, you can either replace the affected nodes or delete the routes manually.
+When you disable `blackholing` in an existing shoot, the associated blackhole routes will be removed automatically. 
+Conversely, when you re-enable `blackholing` again, the iptables-based filter rules will be removed and replaced by blackhole routes.
+
+## Ingress Filtering per Worker Group
+
+You can optionally enable or disable ingress filtering for specified worker groups.
+For example, you may want to disable blackholing in general but enable it for a worker group hosting an external API.
+You can do so by using an optional `workers` field:
+
+```yaml
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+...
+spec:
+  extensions:
+    - type: shoot-networking-filter
+      providerConfig:
+        egressFilter:
+          blackholingEnabled: false
+          workers:
+            blackholingEnabled: true
+            names:
+              - external-api
+...
+```
+
+Please note that only blackholing can be changed per worker group. You may not define different IPs to block or
+disable blocking altogether.
 
 ## Custom IP 
 

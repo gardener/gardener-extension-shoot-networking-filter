@@ -22,9 +22,17 @@ spec:
         - /bin/bash
         - -c
         - |
-          apt-get update && apt-get install -y netcat-openbsd iptables python3 python3-pip; pip3 install --break-system-packages scapy; while true; do sleep 30; done
+          apt-get update && apt-get install -y netcat-openbsd iptables iproute2 ipset python3 python3-pip; pip3 install --break-system-packages scapy; while true; do sleep 30; done
         securityContext:
           privileged: true
+
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - |
+              which nc && which iptables-legacy && which ip && which ipset && which python3 && python3 -c 'import scapy'
 
         volumeMounts:
         - name: networking-test
@@ -50,9 +58,9 @@ metadata:
   namespace: {{ .HelmDeployNamespace }}
 data:
   network-filter-test.sh: |
+    #!/bin/bash
     BLOCKED_IP={{ .BlockAddress }}
 
-    sleep 15
     echo "Testing egress to $BLOCKED_IP"
     old_msg=$(iptables-legacy -n  -t mangle -v -L POLICY_LOGGING | awk 'NR == 3 {print $1}')
     nc -z -w 3 $BLOCKED_IP 443
@@ -81,7 +89,29 @@ data:
       # exit 1
     fi
     echo "SUCCESS: Ingress is blocked."
-    
+
+    echo "Verifying that no iptables blocking mode artifacts remain"
+    ipset list egress-filter-set-v4 > /dev/null
+    if [ $? -eq 0 ]; then
+      echo "ERROR: Expected ipset 'egress-filter-set-v4' not to exist in blackholing mode."
+      exit 1
+    fi
+    ipset list egress-filter-set-v6 > /dev/null
+    if [ $? -eq 0 ]; then
+      echo "ERROR: Expected ipset 'egress-filter-set-v6' not to exist in blackholing mode."
+      exit 1
+    fi
+    iptables-legacy -t mangle -L POSTROUTING | grep match-set
+    if [ $? -eq 0 ]; then
+      echo "ERROR: Expected no iptables v4 rule matching ipsets in blackholing mode."
+      exit 1
+    fi
+    ip6tables-legacy -t mangle -L POSTROUTING | grep match-set
+    if [ $? -eq 0 ]; then
+      echo "ERROR: Expected no iptables v6 rule matching ipsets in blackholing mode."
+      exit 1
+    fi
+    echo "SUCCESS: No iptables blocking mode artifacts remain."
 
   send_spoofed_packet.py: |
     from scapy.all import *
@@ -95,4 +125,27 @@ data:
     icmp = ICMP()
 
     send(ip/icmp)
+{{ else }}
+    echo "Verifying that no blackhole blocking mode artifacts remain"
+    ip link show | grep dummy0
+    if [ $? -eq 0 ]; then
+      echo "ERROR: Expected no dummy0 device to exist in iptables mode."
+      exit 1
+    fi
+    ip route | grep dummy0
+    if [ $? -eq 0 ]; then
+      echo "ERROR: Expected no blackholed routes to exist in iptables mode."
+      exit 1
+    fi
+    iptables-legacy -t mangle -v -L POSTROUTING | grep dummy0
+    if [ $? -eq 0 ]; then
+      echo "ERROR: Expected no blackhole iptables v4 rules to exist in iptables mode."
+      exit 1
+    fi
+    ip6tables-legacy -t mangle -v -L POSTROUTING | grep dummy0
+    if [ $? -eq 0 ]; then
+      echo "ERROR: Expected no blackhole iptables v6 rules to exist in iptables mode."
+      exit 1
+    fi
+    echo "SUCCESS: No blackhole blocking mode artifacts remain."
 {{ end }}

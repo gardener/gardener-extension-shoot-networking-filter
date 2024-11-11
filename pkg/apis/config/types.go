@@ -5,7 +5,7 @@
 package config
 
 import (
-	healthcheckconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
+	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -19,13 +19,16 @@ type Configuration struct {
 	EgressFilter *EgressFilter
 
 	// HealthCheckConfig is the config for the health check controller.
-	HealthCheckConfig *healthcheckconfig.HealthCheckConfig
+	HealthCheckConfig *extensionsconfig.HealthCheckConfig
 }
 
 // EgressFilter contains the configuration for the egress filter.
 type EgressFilter struct {
 	// BlackholingEnabled is a flag to set blackholing or firewall approach.
 	BlackholingEnabled bool
+
+	// Workers contains worker-specific block modes
+	Workers *Workers
 
 	// SleepDuration is the time interval between policy updates.
 	SleepDuration *metav1.Duration
@@ -46,13 +49,12 @@ type EgressFilter struct {
 	EnsureConnectivity *EnsureConnectivity
 }
 
-// FilterListProviderType
 type FilterListProviderType string
 
 const (
 	// FilterListProviderTypeStatic is the provider type for static filter list
 	FilterListProviderTypeStatic FilterListProviderType = "static"
-	// FilterListProviderTypeDownload is the provider type for downloading the filter list from an URL
+	// FilterListProviderTypeDownload is the provider type for downloading the filter list from a URL
 	FilterListProviderTypeDownload FilterListProviderType = "download"
 )
 
@@ -102,4 +104,13 @@ type OAuth2Secret struct {
 type EnsureConnectivity struct {
 	// SeedNamespaces contains the seed namespaces to check for load balancers.
 	SeedNamespaces []string
+}
+
+// Workers allows to specify block modes per worker group.
+type Workers struct {
+	// BlackholingEnabled is a flag to set blackholing or firewall approach.
+	BlackholingEnabled bool
+
+	// Names is a list of worker groups to use the specified blocking mode.
+	Names []string
 }

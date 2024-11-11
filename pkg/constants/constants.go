@@ -28,7 +28,7 @@ const (
 	// FilterNamespaceEnvName is the namespace of the extension deployment
 	FilterNamespaceEnvName = "FILTER_NAMESPACE"
 
-	// FliterListPath is the mount path of the policy files
+	// FilterListPath is the mount path of the policy files
 	FilterListPath = "lists"
 
 	// KeyIPV4List is the key in the filter list secret for the ipv4 policy list

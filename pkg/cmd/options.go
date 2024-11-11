@@ -10,7 +10,7 @@ import (
 	"os"
 	"path"
 
-	healthcheckconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
+	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	extensionshealthcheckcontroller "github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
 	extensionsheartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
@@ -113,7 +113,7 @@ func (c *PolicyFilterConfig) Apply(config *controllerconfig.Config) {
 }
 
 // ApplyHealthCheckConfig applies the HealthCheckConfig to the config.
-func (c *PolicyFilterConfig) ApplyHealthCheckConfig(config *healthcheckconfig.HealthCheckConfig) {
+func (c *PolicyFilterConfig) ApplyHealthCheckConfig(config *extensionsconfig.HealthCheckConfig) {
 	if c.config.HealthCheckConfig != nil {
 		*config = *c.config.HealthCheckConfig
 	}
