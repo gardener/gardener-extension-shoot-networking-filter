@@ -5,7 +5,7 @@
 package config
 
 import (
-	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
+	extensionsconfigv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -19,7 +19,7 @@ type Configuration struct {
 	EgressFilter *EgressFilter
 
 	// HealthCheckConfig is the config for the health check controller.
-	HealthCheckConfig *extensionsconfig.HealthCheckConfig
+	HealthCheckConfig *extensionsconfigv1alpha1.HealthCheckConfig
 }
 
 // EgressFilter contains the configuration for the egress filter.

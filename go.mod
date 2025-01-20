@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
-	github.com/gardener/gardener v1.110.1
+	github.com/gardener/gardener v1.111.0
 	github.com/go-logr/logr v1.4.2
 	github.com/onsi/ginkgo/v2 v2.22.1
 	github.com/onsi/gomega v1.36.2
@@ -22,9 +22,6 @@ require (
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
 	sigs.k8s.io/controller-runtime v0.19.4
 )
-
-// TODO: replace with v1.111.0 as soon as it is released
-replace github.com/gardener/gardener => github.com/gardener/gardener v1.73.1-0.20250120091311-679007b2040c
 
 require (
 	dario.cat/mergo v1.0.1 // indirect
