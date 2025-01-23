@@ -45,7 +45,7 @@ func AddToManager(ctx context.Context, mgr manager.Manager) error {
 		return err
 	}
 
-	return extension.Add(ctx, mgr, extension.AddArgs{
+	return extension.Add(mgr, extension.AddArgs{
 		Actuator:          actuator,
 		ControllerOptions: DefaultAddOptions.ControllerOptions,
 		Name:              Name,

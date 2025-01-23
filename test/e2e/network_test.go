@@ -123,13 +123,14 @@ func runNetworkFilterTest(ctx context.Context, f *framework.ShootCreationFramewo
 
 	By("filter-test daemonset is deployed successfully!")
 
-	out, err := framework.PodExecByLabel(ctx, labels.SelectorFromSet(map[string]string{
-		v1beta1constants.LabelApp: "filter-test",
-	}),
+	out, _, err := framework.PodExecByLabel(ctx,
+		f.ShootFramework.ShootClient,
+		values.HelmDeployNamespace,
+		labels.SelectorFromSet(map[string]string{
+			v1beta1constants.LabelApp: "filter-test",
+		}),
 		"filter-block-test",
 		"/script/network-filter-test.sh",
-		values.HelmDeployNamespace,
-		f.ShootFramework.ShootClient,
 	)
 	Expect(out).ToNot(BeNil())
 	outBytes, _ := io.ReadAll(out)
