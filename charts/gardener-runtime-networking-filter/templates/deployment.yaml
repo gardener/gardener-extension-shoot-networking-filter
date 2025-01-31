@@ -60,6 +60,8 @@ spec:
         {{- if .Values.egressFilter.oauth2Secret }}
         - --oauth2-config-dir=/etc/runtime-networking-filter/oauth2
         {{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
         env:
         - name: FILTER_NAMESPACE
           valueFrom:

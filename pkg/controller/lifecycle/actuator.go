@@ -418,6 +418,7 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 							},
 						},
 						SecurityContext: &corev1.SecurityContext{
+							AllowPrivilegeEscalation: ptr.To(false),
 							Capabilities: &corev1.Capabilities{
 								Add: []corev1.Capability{"NET_ADMIN"},
 							},
