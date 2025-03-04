@@ -57,7 +57,7 @@ func defaultShoot(generateName string, blackholing bool, blockAddress string) *g
 			CloudProfileName:  ptr.To("local"),
 			Kubernetes: gardencorev1beta1.Kubernetes{
 				Version:                     "1.27.1",
-				EnableStaticTokenKubeconfig: ptr.To(true),
+				EnableStaticTokenKubeconfig: ptr.To(false),
 				Kubelet: &gardencorev1beta1.KubeletConfig{
 					SerializeImagePulls: ptr.To(false),
 					RegistryPullQPS:     ptr.To(int32(10)),
