@@ -94,14 +94,12 @@ func createShoot(generateName string, blackholing bool, blockAddress string, use
 			SecretBindingName: ptr.To("local"),
 			CloudProfileName:  ptr.To("local"),
 			Kubernetes: gardencorev1beta1.Kubernetes{
-				Version:                     "1.26.0",
-				EnableStaticTokenKubeconfig: ptr.To(true),
+				Version: "1.27.1",
 				Kubelet: &gardencorev1beta1.KubeletConfig{
 					SerializeImagePulls: ptr.To(false),
 					RegistryPullQPS:     ptr.To(int32(10)),
 					RegistryBurst:       ptr.To(int32(20)),
 				},
-				KubeAPIServer: &gardencorev1beta1.KubeAPIServerConfig{},
 			},
 			Networking: &gardencorev1beta1.Networking{
 				Type:           ptr.To("calico"),
