@@ -156,7 +156,7 @@ func (p *DownloaderFilterListProvider) Setup() error {
 	}
 	if p.downloaderConfig.RefreshPeriod != nil {
 		if p.downloaderConfig.RefreshPeriod.Duration < minRefreshPeriod {
-			return fmt.Errorf("egressFilter.downloaderConfig.RefreshPeriod is too small: %.0f s < %.0f s", p.downloaderConfig.RefreshPeriod.Duration.Seconds(), minRefreshPeriod.Seconds())
+			return fmt.Errorf("egressFilter.downloaderConfig.RefreshPeriod is too small: %.0f s < %.0f s", p.downloaderConfig.RefreshPeriod.Seconds(), minRefreshPeriod.Seconds())
 		}
 		p.ticker = time.NewTicker(p.downloaderConfig.RefreshPeriod.Duration)
 		p.tickerDone = make(chan bool)
