@@ -30,7 +30,6 @@ rules:
   - patch
   - update
   - delete
-  - deletecollection
   - create
 - apiGroups:
   - ""
@@ -65,7 +64,6 @@ rules:
   - patch
   - update
   - delete
-  - deletecollection
   - create
 - apiGroups:
   - coordination.k8s.io
