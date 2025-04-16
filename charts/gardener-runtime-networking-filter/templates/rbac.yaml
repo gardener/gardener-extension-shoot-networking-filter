@@ -12,9 +12,15 @@ metadata:
     app.kubernetes.io/name: {{ .Values.serviceName }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 rules:
-- apiGroups: [""]
-  resources: ["secrets"]
-  verbs: ["create", "get", "update", "patch"]
+- apiGroups: 
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - update
+  - patch
 - apiGroups:
   - resources.gardener.cloud
   resources:
@@ -26,7 +32,6 @@ rules:
   - patch
   - update
   - delete
-  - deletecollection
   - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
