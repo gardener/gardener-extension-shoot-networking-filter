@@ -81,6 +81,7 @@ rules:
   - {{ include "leaderelectionid" . }}
   - gardener-extension-heartbeat
   verbs:
+  - patch
   - update
   - get
 ---
