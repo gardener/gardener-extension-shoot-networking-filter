@@ -1,5 +1,9 @@
 {{- define "name" -}}
+{{- if .Values.gardener.runtimeCluster.enabled -}}
+gardener-extension-shoot-networking-filter-runtime
+{{- else -}}
 gardener-extension-shoot-networking-filter
+{{- end -}}
 {{- end -}}
 
 {{- define "labels.app.key" -}}
