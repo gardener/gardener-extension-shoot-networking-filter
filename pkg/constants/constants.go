@@ -17,6 +17,10 @@ const (
 	NamespaceKubeSystem = "kube-system"
 	// ManagedResourceNamesShoot is the name used to describe the managed shoot resources.
 	ManagedResourceNamesShoot = extensionServiceName + "-shoot"
+	// ManagedResourceNamesGarden is the name used to describe the managed resources for the Garden runtime cluster.
+	ManagedResourceNamesGarden = extensionServiceName + "-garden"
+	// ManagedResourceNamesSeed is the name used to describe the managed resources for the seed.
+	ManagedResourceNamesSeed = extensionServiceName + "-seed"
 
 	// ApplicationName is the name for resource describing the components deployed by the extension controller.
 	ApplicationName = "egress-filter-applier"
