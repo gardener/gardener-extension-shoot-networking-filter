@@ -132,7 +132,6 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		if internalShootConfig.EgressFilter != nil {
 			blackholingEnabled = internalShootConfig.EgressFilter.BlackholingEnabled
 			staticFilterList = internalShootConfig.EgressFilter.StaticFilterList
-			// TODO check if this section is relevant for deployment on runtime cluster
 			if isShootDeployment {
 				if internalShootConfig.EgressFilter.Workers != nil {
 					blackholingEnabledByWorker = make(map[string]bool)
