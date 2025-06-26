@@ -19,9 +19,10 @@ cd "$repo_root/gardener"
 git checkout "$gardener_version"
 source "$repo_root/gardener/hack/ci-common.sh"
 
-echo '172.18.255.1 api.e2e-default.local.external.local.gardener.cloud' >> /etc/hosts
-echo '172.18.255.1 api.e2e-blackholing.local.external.local.gardener.cloud' >> /etc/hosts
-echo '127.0.0.1 garden.local.gardener.cloud' >> /etc/hosts
+grep -qxF '172.18.255.1 api.e2e-default.local.external.local.gardener.cloud' /etc/hosts || echo '172.18.255.1 api.e2e-default.local.external.local.gardener.cloud' >> /etc/hosts
+grep -qxF '172.18.255.1 api.e2e-blackholing.local.external.local.gardener.cloud' /etc/hosts || echo '172.18.255.1 api.e2e-blackholing.local.external.local.gardener.cloud' >> /etc/hosts
+grep -qxF '172.18.255.1 api.e2e-worker-group.local.external.local.gardener.cloud' /etc/hosts || echo '172.18.255.1 api.e2e-worker-group.local.external.local.gardener.cloud' >> /etc/hosts
+grep -qxF '127.0.0.1 garden.local.gardener.cloud' /etc/hosts || echo '127.0.0.1 garden.local.gardener.cloud' >> /etc/hosts
 
 make kind-up
 trap '{
@@ -30,27 +31,18 @@ trap '{
   make kind-down
 }' EXIT
 export KUBECONFIG=$repo_root/gardener/example/gardener-local/kind/local/kubeconfig
+echo ">>>>>>>>>>>>>>>>>>>> kind-up done"
+echo ">>>>>>>>>>>>>>>>>>>> gardener-up"
 make gardener-up
+echo "<<<<<<<<<<<<<<<<<<<< gardener-up done"
 
 cd $repo_root
 
-version=$(git rev-parse HEAD)
-make docker-images
-docker tag europe-docker.pkg.dev/gardener-project/public/gardener/extensions/shoot-networking-filter:latest shoot-networking-filter-local:$version
-kind load docker-image shoot-networking-filter-local:$version --name gardener-local
+echo ">>>>>>>>>>>>>>>>>>>> extension-up"
+make extension-up
+echo "<<<<<<<<<<<<<<<<<<<< extension-up done"
 
-mkdir -p $repo_root/tmp
-cp -f $repo_root/example/controller-registration.yaml $repo_root/tmp/controller-registration.yaml
-yq -i e "(select (.helm.values.image) | .helm.values.image.tag) |= \"$version\"" $repo_root/tmp/controller-registration.yaml
-yq -i e '(select (.helm.values.image) | .helm.values.image.repository) |= "docker.io/library/shoot-networking-filter-local"' $repo_root/tmp/controller-registration.yaml
-
-kubectl apply -f "$repo_root/tmp/controller-registration.yaml"
-
-echo '172.18.255.1 api.e2e-default.local.external.local.gardener.cloud' >> /etc/hosts
-echo '172.18.255.1 api.e2e-blackholing.local.external.local.gardener.cloud' >> /etc/hosts
-echo '172.18.255.1 api.e2e-worker-group.local.external.local.gardener.cloud' >> /etc/hosts
-echo '127.0.0.1 garden.local.gardener.cloud' >> /etc/hosts
-
+export REPO_ROOT=$repo_root
 # reduce flakiness in contended pipelines
 export GOMEGA_DEFAULT_EVENTUALLY_TIMEOUT=5s
 export GOMEGA_DEFAULT_EVENTUALLY_POLLING_INTERVAL=200ms
@@ -59,7 +51,5 @@ export GOMEGA_DEFAULT_EVENTUALLY_POLLING_INTERVAL=200ms
 export GOMEGA_DEFAULT_CONSISTENTLY_DURATION=5s
 export GOMEGA_DEFAULT_CONSISTENTLY_POLLING_INTERVAL=200ms
 
-ginkgo --timeout=1h --v --show-node-events "$@" $repo_root/test/e2e/...
+ginkgo --timeout=1h --v --show-node-events "$@" $repo_root/test/e2e/local/...
 
-cd "$repo_root/gardener"
-make gardener-down

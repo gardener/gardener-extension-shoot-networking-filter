@@ -12,21 +12,24 @@ import (
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	operatorv1alpha1 "github.com/gardener/gardener/pkg/apis/operator/v1alpha1"
 	kubernetesclient "github.com/gardener/gardener/pkg/client/kubernetes"
+	"github.com/gardener/gardener/pkg/logger"
 	"github.com/gardener/gardener/test/framework"
 	"github.com/gardener/gardener/test/utils/access"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
+	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config/v1alpha1"
-)
-
-var (
-	parentCtx context.Context
 )
 
 var _ = BeforeEach(func() {
@@ -143,7 +146,33 @@ func setupShootClient(ctx context.Context, f *framework.ShootCreationFramework) 
 	f.ShootFramework.ShootClient, err = access.CreateShootClientFromAdminKubeconfig(ctx, f.GardenClient, f.Shoot)
 	Expect(err).NotTo(HaveOccurred())
 
-	resourceDir, err := filepath.Abs(filepath.Join(".."))
+	resourceDir, err := filepath.Abs(filepath.Join("..", ".."))
 	Expect(err).NotTo(HaveOccurred())
 	f.TemplatesDir = filepath.Join(resourceDir, "templates")
 }
+
+var (
+	parentCtx     context.Context
+	runtimeClient client.Client
+)
+
+var _ = BeforeSuite(func() {
+	Expect(os.Getenv("KUBECONFIG")).NotTo(BeEmpty(), "KUBECONFIG must be set")
+	Expect(os.Getenv("REPO_ROOT")).NotTo(BeEmpty(), "REPO_ROOT must be set")
+
+	logf.SetLogger(logger.MustNewZapLogger(logger.InfoLevel, logger.FormatJSON, zap.WriteTo(GinkgoWriter)))
+
+	restConfig, err := kubernetesclient.RESTConfigFromClientConnectionConfiguration(&componentbaseconfigv1alpha1.ClientConnectionConfiguration{Kubeconfig: os.Getenv("KUBECONFIG")}, nil, kubernetesclient.AuthTokenFile, kubernetesclient.AuthClientCertificate)
+	Expect(err).NotTo(HaveOccurred())
+
+	scheme := runtime.NewScheme()
+	Expect(kubernetesscheme.AddToScheme(scheme)).To(Succeed())
+	Expect(operatorv1alpha1.AddToScheme(scheme)).To(Succeed())
+	Expect(extensionsv1alpha1.AddToScheme(scheme)).To(Succeed())
+	runtimeClient, err = client.New(restConfig, client.Options{Scheme: scheme})
+	Expect(err).NotTo(HaveOccurred())
+})
+
+var _ = BeforeEach(func() {
+	parentCtx = context.Background()
+})

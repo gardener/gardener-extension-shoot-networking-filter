@@ -1,0 +1,54 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: shoot-networking-filter
+build:
+  tagPolicy:
+    customTemplate:
+      template: "{{.version}}-{{.sha}}"
+      components:
+        - name: version
+          envTemplate:
+            template: "{{.EXTENSION_VERSION}}"
+        - name: sha
+          gitCommit:
+            variant: AbbrevCommitSha
+  artifacts:
+    - image: local-skaffold/gardener-extension-shoot-networking-filter
+      ko:
+        dependencies:
+          paths:
+            - cmd/gardener-extension-shoot-networking-filter/
+            - imagevector/images.yaml
+            - pkg/apis/config/
+            - pkg/apis/config/v1alpha1/
+            - pkg/controller/config/
+            - pkg/controller/healthcheck/
+            - pkg/controller/lifecycle/
+            - VERSION
+        ldflags:
+          - '{{.LD_FLAGS}}'
+        main: ./cmd/gardener-extension-shoot-networking-filter/
+    - image: local-skaffold/gardener-extension-shoot-networking-filter/charts/extension
+      custom:
+        buildCommand: |
+          echo "hackdir: $EXTENSION_GARDENER_HACK_DIR" && bash "$EXTENSION_GARDENER_HACK_DIR/push-helm.sh" ./charts/gardener-extension-shoot-networking-filter .image.ref
+        dependencies:
+          paths:
+            - charts/gardener-extension-shoot-networking-filter
+      requires:
+        - image: local-skaffold/gardener-extension-shoot-networking-filter
+          alias: IMG
+  insecureRegistries:
+    - garden.local.gardener.cloud:5001
+manifests:
+  rawYaml:
+    - local-setup/operator-extension-resource.yaml
+deploy:
+  kubectl: {}
+resourceSelector:
+  allow:
+    - groupKind: Extension.operator.gardener.cloud
+      image:
+        - .spec.deployment.extension.helm.ociRepository.ref
+        
