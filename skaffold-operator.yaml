@@ -29,6 +29,37 @@ build:
         ldflags:
           - '{{.LD_FLAGS}}'
         main: ./cmd/gardener-extension-shoot-networking-filter/
+    - image: local-skaffold/gardener-extension-shoot-networking-filter-admission
+      ko:
+        dependencies:
+          paths:
+            - cmd/gardener-extension-shoot-networking-filter-admission
+            - cmd/gardener-extension-shoot-networking-filter-admission/app
+            - pkg/admission/cmd
+            - pkg/apis/config/
+            - pkg/apis/config/v1alpha1/
+            - pkg/constants
+            - VERSION
+        ldflags:
+          - '{{.LD_FLAGS}}'
+        main: ./cmd/gardener-extension-shoot-networking-filter-admission
+    - image: local-skaffold/gardener-extension-shoot-networking-filter-admission/charts/application
+      custom:
+        buildCommand: |
+          echo "hackdir: $EXTENSION_GARDENER_HACK_DIR" && bash "$EXTENSION_GARDENER_HACK_DIR/push-helm.sh" ./charts/gardener-extension-shoot-networking-filter-admission/charts/application .image.ref
+        dependencies:
+          paths:
+            - charts/gardener-extension-shoot-networking-filter-admission/charts/application
+    - image: local-skaffold/gardener-extension-shoot-networking-filter-admission/charts/runtime
+      custom:
+        buildCommand: |
+          echo "hackdir: $EXTENSION_GARDENER_HACK_DIR" && bash "$EXTENSION_GARDENER_HACK_DIR/push-helm.sh" ./charts/gardener-extension-shoot-networking-filter-admission/charts/runtime .image.ref
+        dependencies:
+          paths:
+            - charts/gardener-extension-shoot-networking-filter-admission/charts/runtime
+      requires:
+        - image: local-skaffold/gardener-extension-shoot-networking-filter-admission
+          alias: IMG
     - image: local-skaffold/gardener-extension-shoot-networking-filter/charts/extension
       custom:
         buildCommand: |
@@ -51,4 +82,5 @@ resourceSelector:
     - groupKind: Extension.operator.gardener.cloud
       image:
         - .spec.deployment.extension.helm.ociRepository.ref
-        
+        - .spec.deployment.admission.runtimeCluster.helm.ociRepository.ref
+        - .spec.deployment.admission.virtualCluster.helm.ociRepository.ref

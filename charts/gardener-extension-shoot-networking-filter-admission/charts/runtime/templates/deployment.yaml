@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "labels" . | indent 4 }}
+    high-availability-config.resources.gardener.cloud/type: server
+spec:
+  revisionHistoryLimit: 5
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+{{ include "labels" . | indent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- if .Values.kubeconfig }}
+        checksum/gardener-extension-shoot-network-filter-admission-kubeconfig: {{ include (print $.Template.BasePath "/secret-kubeconfig.yaml") . | sha256sum }}
+        {{- end }}
+      labels:
+        networking.gardener.cloud/to-dns: allowed
+        networking.resources.gardener.cloud/to-virtual-garden-kube-apiserver-tcp-443: allowed
+        networking.gardener.cloud/to-runtime-apiserver: allowed
+{{ include "labels" . | indent 8 }}
+    spec:
+      {{- if .Values.gardener.runtimeCluster.priorityClassName }}
+      priorityClassName: {{ .Values.gardener.runtimeCluster.priorityClassName }}
+      {{- end }}
+      serviceAccountName: {{ include "name" . }}
+      {{- if .Values.kubeconfig }}
+      automountServiceAccountToken: false
+      {{- end }}
+      containers:
+      - name: {{ include "name" . }}
+        image: {{ include "image" .Values.image }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args:
+        - --webhook-config-server-port={{ .Values.webhookConfig.serverPort }}
+        {{- if .Values.gardener.virtualCluster.enabled }}
+        - --webhook-config-mode=url
+        - --webhook-config-url={{ printf "%s.%s" (include "name" .) (.Release.Namespace) }}
+        {{- else }}
+        - --webhook-config-mode=service
+        {{- end }}
+        - --webhook-config-namespace={{ .Release.Namespace }}
+        {{- if .Values.kubeconfig }}
+        - --kubeconfig=/etc/gardener-extension-shoot-network-filter-admission/kubeconfig/kubeconfig
+        {{- end }}
+        {{- if .Values.projectedKubeconfig }}
+        - --kubeconfig={{ required ".Values.projectedKubeconfig.baseMountPath is required" .Values.projectedKubeconfig.baseMountPath }}/kubeconfig
+        {{- end }}
+        - --health-bind-address=:{{ .Values.healthPort }}
+        - --leader-election-id={{ include "leaderelectionid" . }}
+        env:
+        - name: LEADER_ELECTION_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        {{- if .Values.gardener.virtualCluster.enabled }}
+        - name: SOURCE_CLUSTER
+          value: enabled
+        {{- end }}
+        ports:
+        - name: webhook-server
+          containerPort: {{ .Values.webhookConfig.serverPort }}
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.healthPort }}
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: {{ .Values.healthPort }}
+            scheme: HTTP
+          initialDelaySeconds: 5
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | nindent 10 }}
+{{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
+        volumeMounts:
+        {{- if .Values.kubeconfig }}
+        - name: gardener-extension-shoot-network-filter-admission-kubeconfig
+          mountPath: /etc/gardener-extension-shoot-network-filter-admission/kubeconfig
+          readOnly: true
+        {{- end }}
+        {{- if .Values.projectedKubeconfig }}
+        - name: kubeconfig
+          mountPath: {{ required ".Values.projectedKubeconfig.baseMountPath is required" .Values.projectedKubeconfig.baseMountPath }}
+          readOnly: true
+        {{- end }}
+      volumes:
+      {{- if .Values.kubeconfig }}
+      - name: gardener-extension-shoot-network-filter-admission-kubeconfig
+        secret:
+          secretName: gardener-extension-shoot-network-filter-admission-kubeconfig
+          defaultMode: 420
+      {{- end }}
+      {{- if .Values.projectedKubeconfig }}
+      - name: kubeconfig
+        projected:
+          defaultMode: 420
+          sources:
+          - secret:
+              items:
+              - key: kubeconfig
+                path: kubeconfig
+              name: {{ required ".Values.projectedKubeconfig.genericKubeconfigSecretName is required" .Values.projectedKubeconfig.genericKubeconfigSecretName }}
+              optional: false
+          - secret:
+              items:
+              - key: token
+                path: token
+              name: {{ required ".Values.projectedKubeconfig.tokenSecretName is required" .Values.projectedKubeconfig.tokenSecretName }}
+              optional: false
+      {{- end }}

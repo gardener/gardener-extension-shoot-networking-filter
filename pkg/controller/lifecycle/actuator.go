@@ -122,6 +122,10 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		return fmt.Errorf("failed to convert shoot config: %w", err)
 	}
 
+	if err := ValidateProviderConfig(internalShootConfig); err != nil {
+		return fmt.Errorf("failed to validate provider config: %w", err)
+	}
+
 	if a.serviceConfig.EgressFilter != nil {
 		blackholingEnabled = a.serviceConfig.EgressFilter.BlackholingEnabled
 

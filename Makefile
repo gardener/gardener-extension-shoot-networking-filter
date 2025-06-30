@@ -55,6 +55,7 @@ docker-login:
 .PHONY: docker-images
 docker-images:
 	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) -t $(IMAGE_PREFIX)/$(NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(NAME):latest -f Dockerfile -m 6g --platform $(PLATFORM) --target $(EXTENSION_PREFIX)-$(NAME) .
+	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) -t $(IMAGE_PREFIX)/$(NAME)-admission:$(VERSION) -t $(IMAGE_PREFIX)/$(NAME)-admission:latest -f Dockerfile -m 6g --platform $(PLATFORM) --target $(EXTENSION_PREFIX)-$(NAME) .
 	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) -t $(IMAGE_PREFIX)/$(RUNTIME_NAME):$(VERSION) -t $(IMAGE_PREFIX)/$(RUNTIME_NAME):latest -f Dockerfile -m 6g --platform $(PLATFORM) --target $(RUNTIME_NAME) .
 
 #####################################################################
