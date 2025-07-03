@@ -171,9 +171,9 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 	if isShootDeployment {
 		return managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, "gardener-extension-shoot-networking-filter", false, shootResources)
 	} else {
-		name := a.getRuntimeOrSeedManagedResourceName()
-		if name == "" {
-			return fmt.Errorf("no managed resource name found for runtime or seed")
+		name, err := a.getRuntimeOrSeedManagedResourceName()
+		if err != nil {
+			return err
 		}
 		if name == constants.ManagedResourceNamesSeed {
 			seedIsGarden, err := gardenletutils.SeedIsGarden(ctx, a.client)
@@ -206,9 +206,9 @@ func (a *actuator) Delete(ctx context.Context, _ logr.Logger, ex *extensionsv1al
 			return err
 		}
 	} else {
-		name := a.getRuntimeOrSeedManagedResourceName()
-		if name == "" {
-			return fmt.Errorf("no managed resource name found for runtime or seed")
+		name, err := a.getRuntimeOrSeedManagedResourceName()
+		if err != nil {
+			return err
 		}
 
 		if err := managedresources.DeleteForSeed(ctx, a.client, namespace, name); err != nil {
@@ -280,16 +280,16 @@ func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, filt
 	return filteredSecretData, err
 }
 
-func (a *actuator) getRuntimeOrSeedManagedResourceName() string {
+func (a *actuator) getRuntimeOrSeedManagedResourceName() (string, error) {
 	for _, class := range a.extensionClasses {
 		if class == extensionsv1alpha1.ExtensionClassSeed {
-			return constants.ManagedResourceNamesSeed
+			return constants.ManagedResourceNamesSeed, nil
 		}
 		if class == extensionsv1alpha1.ExtensionClassGarden {
-			return constants.ManagedResourceNamesGarden
+			return constants.ManagedResourceNamesGarden, nil
 		}
 	}
-	return ""
+	return "", fmt.Errorf("no managed resource name as extension classes unexpected")
 }
 
 func (a *actuator) collectSeedLoadBalancersIPs(ctx context.Context, namespaces []string) ([]net.IP, error) {
