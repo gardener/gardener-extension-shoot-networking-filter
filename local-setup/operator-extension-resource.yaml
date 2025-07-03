@@ -1,0 +1,43 @@
+apiVersion: operator.gardener.cloud/v1alpha1
+kind: Extension
+metadata:
+  annotations:
+    security.gardener.cloud/pod-security-enforce: baseline
+  name: extension-shoot-networking-filter
+spec:
+  deployment:
+    extension:
+      helm:
+        ociRepository:
+          ref: local-skaffold/gardener-extension-shoot-networking-filter/charts/extension
+      values:
+        image:
+          tag: v0.24.0-dev
+        egressFilter:
+          filterListProviderType: static
+          staticFilterList:
+            - network: 1.2.3.4/31
+              policy: BLOCK_ACCESS
+            - network: 5.6.7.8/32
+              policy: BLOCK_ACCESS
+            - network: ::2/128
+              policy: BLOCK_ACCESS
+      runtimeClusterValues:
+        image:
+          tag: v0.24.0-dev
+        egressFilter:
+          filterListProviderType: static
+          staticFilterList:
+            - network: 1.20.30.40/31
+              policy: BLOCK_ACCESS
+            - network: 5.60.70.80/32
+              policy: BLOCK_ACCESS
+            - network: ::20/128
+              policy: BLOCK_ACCESS
+  resources:
+  - kind: Extension
+    type: shoot-networking-filter
+    clusterCompatibility:
+    - garden
+    - seed
+    - shoot

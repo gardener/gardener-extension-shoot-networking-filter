@@ -70,8 +70,7 @@ spec:
       - name: gardener-extension-{{ .Values.serviceName }}
         image: {{ include "image" . }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
-        command:
-        - /gardener-extension-shoot-networking-filter
+        args:
         - --config=/etc/shoot-networking-filter/config.yaml
         {{- if .Values.egressFilter.oauth2Secret }}
         - --oauth2-config-dir=/etc/shoot-networking-filter/oauth2
@@ -83,6 +82,10 @@ spec:
         - --ignore-operation-annotation={{ .Values.controllers.ignoreOperationAnnotation }}
         - --leader-election-id={{ include "leaderelectionid" . }}
         - --gardener-version={{ .Values.gardener.version }}
+        {{- if .Values.gardener.runtimeCluster.enabled }}
+        - --extension-class=garden
+        - --controllers=shoot_networking_filter_lifecycle_controller
+        {{- end }}
         securityContext:
           allowPrivilegeEscalation: false
         env:

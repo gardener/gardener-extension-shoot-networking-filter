@@ -16,8 +16,11 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	extensionsv1alpha1helper "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1/helper"
 	kubernetesclient "github.com/gardener/gardener/pkg/client/kubernetes"
+	"github.com/gardener/gardener/pkg/extensions"
 	"github.com/gardener/gardener/pkg/utils"
+	gardenletutils "github.com/gardener/gardener/pkg/utils/gardener/gardenlet"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -46,15 +49,16 @@ const (
 )
 
 // NewActuator returns an actuator responsible for Extension resources.
-func NewActuator(mgr manager.Manager, serviceConfig config.Configuration, oauth2secret *config.OAuth2Secret) (extension.Actuator, error) {
+func NewActuator(mgr manager.Manager, serviceConfig config.Configuration, oauth2secret *config.OAuth2Secret, extensionClasses []extensionsv1alpha1.ExtensionClass) (extension.Actuator, error) {
 	a := &actuator{
-		client:        mgr.GetClient(),
-		config:        mgr.GetConfig(),
-		scheme:        mgr.GetScheme(),
-		decoder:       serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
-		logger:        log.Log.WithName(ActuatorName),
-		serviceConfig: serviceConfig,
-		oauth2secret:  oauth2secret,
+		client:           mgr.GetClient(),
+		config:           mgr.GetConfig(),
+		scheme:           mgr.GetScheme(),
+		decoder:          serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
+		logger:           log.Log.WithName(ActuatorName),
+		serviceConfig:    serviceConfig,
+		oauth2secret:     oauth2secret,
+		extensionClasses: extensionClasses,
 	}
 
 	switch a.serviceConfig.EgressFilter.FilterListProviderType {
@@ -71,31 +75,39 @@ func NewActuator(mgr manager.Manager, serviceConfig config.Configuration, oauth2
 }
 
 type actuator struct {
-	client        client.Client
-	config        *rest.Config
-	decoder       runtime.Decoder
-	serviceConfig config.Configuration
-	oauth2secret  *config.OAuth2Secret
-	provider      FilterListProvider
-	logger        logr.Logger
-	scheme        *runtime.Scheme
+	client           client.Client
+	config           *rest.Config
+	decoder          runtime.Decoder
+	extensionClasses []extensionsv1alpha1.ExtensionClass
+	serviceConfig    config.Configuration
+	oauth2secret     *config.OAuth2Secret
+	provider         FilterListProvider
+	logger           logr.Logger
+	scheme           *runtime.Scheme
 }
 
 // Reconcile the Extension resource.
 func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv1alpha1.Extension) error {
-	blackholingEnabled := true
-	sleepDuration := "1h"
-	staticFilterList := []config.Filter{}
-	secretData := map[string][]byte{
-		constants.KeyIPV4List: []byte("[]"),
-		constants.KeyIPV6List: []byte("[]"),
-	}
-	var blackholingEnabledByWorker map[string]bool
+	var (
+		blackholingEnabled = true
+		sleepDuration      = "1h"
+		staticFilterList   = []config.Filter{}
+		secretData         = map[string][]byte{
+			constants.KeyIPV4List: []byte("[]"),
+			constants.KeyIPV6List: []byte("[]"),
+		}
+		blackholingEnabledByWorker map[string]bool
+		namespace                  = ex.GetNamespace()
+		isShootDeployment          = isShootDeployment(ex)
+		cluster                    *extensions.Cluster
+		err                        error
+	)
 
-	namespace := ex.GetNamespace()
-	cluster, err := controller.GetCluster(ctx, a.client, namespace)
-	if err != nil {
-		return fmt.Errorf("failed to get cluster config: %w", err)
+	if isShootDeployment {
+		cluster, err = controller.GetCluster(ctx, a.client, namespace)
+		if err != nil {
+			return fmt.Errorf("failed to get cluster config: %w", err)
+		}
 	}
 
 	shootConfig := &v1alpha1.Configuration{}
@@ -120,14 +132,16 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		if internalShootConfig.EgressFilter != nil {
 			blackholingEnabled = internalShootConfig.EgressFilter.BlackholingEnabled
 			staticFilterList = internalShootConfig.EgressFilter.StaticFilterList
-			if internalShootConfig.EgressFilter.Workers != nil {
-				blackholingEnabledByWorker = make(map[string]bool)
-				workerSet := sets.New[string](internalShootConfig.EgressFilter.Workers.Names...)
-				for _, worker := range cluster.Shoot.Spec.Provider.Workers {
-					if workerSet.Has(worker.Name) {
-						blackholingEnabledByWorker[worker.Name] = internalShootConfig.EgressFilter.Workers.BlackholingEnabled
-					} else {
-						blackholingEnabledByWorker[worker.Name] = blackholingEnabled
+			if isShootDeployment {
+				if internalShootConfig.EgressFilter.Workers != nil {
+					blackholingEnabledByWorker = make(map[string]bool)
+					workerSet := sets.New[string](internalShootConfig.EgressFilter.Workers.Names...)
+					for _, worker := range cluster.Shoot.Spec.Provider.Workers {
+						if workerSet.Has(worker.Name) {
+							blackholingEnabledByWorker[worker.Name] = internalShootConfig.EgressFilter.Workers.BlackholingEnabled
+						} else {
+							blackholingEnabledByWorker[worker.Name] = blackholingEnabled
+						}
 					}
 				}
 			}
@@ -154,7 +168,25 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		return err
 	}
 
-	return managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, "gardener-extension-shoot-networking-filter", false, shootResources)
+	if isShootDeployment {
+		return managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, "gardener-extension-shoot-networking-filter", false, shootResources)
+	} else {
+		name, err := a.getRuntimeOrSeedManagedResourceName()
+		if err != nil {
+			return err
+		}
+		if name == constants.ManagedResourceNamesSeed {
+			seedIsGarden, err := gardenletutils.SeedIsGarden(ctx, a.client)
+			if err != nil {
+				return fmt.Errorf("failed to check if seed is the Garden runtime cluster: %w", err)
+			}
+			if seedIsGarden {
+				// nothing to do, the resources are already deployed for the runtime cluster.
+				shootResources = map[string][]byte{}
+			}
+		}
+		return managedresources.CreateForSeed(ctx, a.client, namespace, name, false, shootResources)
+	}
 }
 
 // Delete the Extension resource.
@@ -165,12 +197,27 @@ func (a *actuator) Delete(ctx context.Context, _ logr.Logger, ex *extensionsv1al
 	timeoutShootCtx, cancelShootCtx := context.WithTimeout(ctx, twoMinutes)
 	defer cancelShootCtx()
 
-	if err := managedresources.DeleteForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot); err != nil {
-		return err
-	}
+	if isShootDeployment(ex) {
+		if err := managedresources.DeleteForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot); err != nil {
+			return err
+		}
 
-	if err := managedresources.WaitUntilDeleted(timeoutShootCtx, a.client, namespace, constants.ManagedResourceNamesShoot); err != nil {
-		return err
+		if err := managedresources.WaitUntilDeleted(timeoutShootCtx, a.client, namespace, constants.ManagedResourceNamesShoot); err != nil {
+			return err
+		}
+	} else {
+		name, err := a.getRuntimeOrSeedManagedResourceName()
+		if err != nil {
+			return err
+		}
+
+		if err := managedresources.DeleteForSeed(ctx, a.client, namespace, name); err != nil {
+			return err
+		}
+
+		if err := managedresources.WaitUntilDeleted(timeoutShootCtx, a.client, namespace, name); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -231,6 +278,18 @@ func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, filt
 		a.logger.Info("filterList unmodified by seed load balancers")
 	}
 	return filteredSecretData, err
+}
+
+func (a *actuator) getRuntimeOrSeedManagedResourceName() (string, error) {
+	for _, class := range a.extensionClasses {
+		if class == extensionsv1alpha1.ExtensionClassSeed {
+			return constants.ManagedResourceNamesSeed, nil
+		}
+		if class == extensionsv1alpha1.ExtensionClassGarden {
+			return constants.ManagedResourceNamesGarden, nil
+		}
+	}
+	return "", fmt.Errorf("no managed resource name as extension classes unexpected")
 }
 
 func (a *actuator) collectSeedLoadBalancersIPs(ctx context.Context, namespaces []string) ([]net.IP, error) {
@@ -477,4 +536,8 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 	}
 
 	return ds, nil
+}
+
+func isShootDeployment(ex *extensionsv1alpha1.Extension) bool {
+	return extensionsv1alpha1helper.GetExtensionClassOrDefault(ex.Spec.Class) == extensionsv1alpha1.ExtensionClassShoot
 }
