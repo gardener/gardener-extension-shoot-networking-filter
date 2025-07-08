@@ -6,6 +6,15 @@ metadata:
   name: extension-shoot-networking-filter
 spec:
   deployment:
+    admission:
+      runtimeCluster:
+        helm:
+          ociRepository:
+            ref: local-skaffold/gardener-extension-shoot-networking-filter-admission/charts/runtime:v0.24.0-dev
+      virtualCluster:
+        helm:
+          ociRepository:
+            ref: local-skaffold/gardener-extension-shoot-networking-filter-admission/charts/application:v0.24.0-dev
     extension:
       helm:
         ociRepository:

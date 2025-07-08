@@ -22,6 +22,15 @@ spec:
       helm:
         ociRepository:
           ref: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions/shoot-networking-filter:$version
+    admission:
+      runtimeCluster:
+        helm:
+          ociRepository:
+            ref: local-skaffold/gardener-extension-shoot-networking-filter-admission/charts/runtime:$version
+      virtualCluster:
+        helm:
+          ociRepository:
+            ref: local-skaffold/gardener-extension-shoot-networking-filter-admission/charts/application:$version
 EOF
 
 kubectl kustomize "${repo_root}/example/shoot-networking-filter/example" -o "${repo_root}/example/extension-shoot-networking-filter.yaml"
