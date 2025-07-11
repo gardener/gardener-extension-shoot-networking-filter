@@ -34,6 +34,16 @@ spec:
               policy: BLOCK_ACCESS
             - network: ::20/128
               policy: BLOCK_ACCESS
+    admission:
+      runtimeCluster:
+        helm:
+          ociRepository:
+            ref: local-skaffold/gardener-extension-shoot-networking-filter-admission/charts/runtime
+      virtualCluster:
+        helm:
+          ociRepository:
+            ref: local-skaffold/gardener-extension-shoot-networking-filter-admission/charts/application
+
   resources:
   - kind: Extension
     type: shoot-networking-filter

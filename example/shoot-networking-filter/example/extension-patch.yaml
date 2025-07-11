@@ -10,4 +10,13 @@ spec:
     extension:
       helm:
         ociRepository:
-          ref: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions/shoot-networking-filter:v0.24.0-dev
+          ref: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions/gardener-extension-shoot-networking-filter:v0.24.0-dev
+    admission:
+      runtimeCluster:
+        helm:
+          ociRepository:
+            ref: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions/gardener-extension-shoot-networking-filter-admission-runtime:v0.24.0-dev
+      virtualCluster:
+        helm:
+          ociRepository:
+            ref: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions/gardener-extension-shoot-networking-filter-admission-application:v0.24.0-dev

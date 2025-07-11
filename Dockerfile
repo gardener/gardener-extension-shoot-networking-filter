@@ -31,3 +31,10 @@ WORKDIR /
 
 COPY --from=builder /go/bin/gardener-runtime-networking-filter /gardener-runtime-networking-filter
 ENTRYPOINT ["/gardener-runtime-networking-filter"]
+
+############ gardener-runtime-networking-filter
+FROM  gcr.io/distroless/static-debian12:nonroot AS gardener-extension-shoot-networking-filter-admission
+WORKDIR /
+
+COPY --from=builder /go/bin/gardener-extension-shoot-networking-filter-admission /gardener-extension-shoot-networking-filter-admission
+ENTRYPOINT ["/gardener-extension-shoot-networking-filter-admission"]
