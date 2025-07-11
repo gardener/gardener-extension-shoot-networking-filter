@@ -1,5 +1,5 @@
 image:
-  repository: ghcr.io/stackitcloud/gardener-extension-shoot-network-filter-admission
+  repository: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/shoot-networking-filter-admission
   tag: latest
   pullPolicy: IfNotPresent
 
