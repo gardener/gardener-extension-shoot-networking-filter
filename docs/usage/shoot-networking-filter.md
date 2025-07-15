@@ -105,3 +105,33 @@ spec:
 ...
 ```
 
+## Event Logging
+
+Block events are logged automatically into the linux kernel log of the node where the event occurred.
+
+For example, consider a shoot cluster configured using the following configuration:
+
+```yaml
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+...
+spec:
+  extensions:
+    - type: shoot-networking-filter
+      providerConfig:
+        egressFilter:
+          staticFilterList:
+          - network: 1.2.3.4/31
+            policy: BLOCK_ACCESS
+...
+```
+
+If a pod tries to access the IP address `1.2.3.4`, e.g. by running the command `curl https://1.2.3.4`, the following log message will be generated in the kernel log of the node where the pod is running:
+
+```
+Policy-Filter-Dropped:IN=califb3eb82ef50 OUT=ens5 MAC=ee:ee:ee:ee:ee:ee:8a:7f:1f:f9:a0:ca:08:00 SRC=100.64.0.7 DST=1.2.3.4 LEN=60 TOS=0x00 PREC=0x00 TTL=63 ID=33784 DF PROTO=TCP SPT=55012 DPT=443 WINDOW=65535 RES=0x00 SYN URGP=0 MARK=0x10000
+```
+
+Please note that the log message includes the source (`SRC`) and destination (`DST`) IP addresses and the port numbers (`SPT` & `DPT`).
+
+The block events can be viewed using the `dmesg` command or various other tools displaying linux kernel logs. They are also available via the Gardener observability tools.
