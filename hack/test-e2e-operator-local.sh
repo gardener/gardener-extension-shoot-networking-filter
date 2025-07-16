@@ -19,15 +19,15 @@ cd "$repo_root/gardener"
 git checkout "$gardener_version"
 source "$repo_root/gardener/hack/ci-common.sh"
 
-echo ">>>>>>>>>>>>>>>>>>>> kind-operator-up"
-make kind-operator-up
+echo ">>>>>>>>>>>>>>>>>>>> kind-single-node-up"
+make kind-single-node-up
 trap '{
   cd "$repo_root/gardener"
   export_artifacts "gardener-operator-local"
-  make kind-operator-down
+  make kind-single-node-down
 }' EXIT
-export KUBECONFIG=$repo_root/gardener/example/gardener-local/kind/operator/kubeconfig
-echo "<<<<<<<<<<<<<<<<<<<< kind-operator-up done"
+export KUBECONFIG=$repo_root/gardener/dev-setup/gardenlet/components/kubeconfigs/seed-local/kubeconfig
+echo "<<<<<<<<<<<<<<<<<<<< kind-single-node-up done"
 
 echo ">>>>>>>>>>>>>>>>>>>> operator-up"
 make operator-up

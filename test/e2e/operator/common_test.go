@@ -206,7 +206,7 @@ func waitForDaemonSetToBeRunning(ctx context.Context, namespace, name string) {
 		ds := &appsv1.DaemonSet{}
 		g.Expect(runtimeClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, ds)).To(Succeed())
 		return ds
-	}).WithPolling(2 * time.Second).Should(HaveField("Status.NumberReady", Equal(int32(3))))
+	}).WithPolling(2 * time.Second).Should(HaveField("Status.NumberReady", Equal(int32(1))))
 }
 
 func waitForOperatorExtensionToBeDeleted(ctx context.Context, extension *operatorv1alpha1.Extension) {
