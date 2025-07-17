@@ -97,7 +97,7 @@ var _ = Describe("Provider Config Validation", func() {
 			},
 			field.NewPath("config"),
 			ConsistOf(
-				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.staticFilterList.policy")})),
+				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.staticFilterList[0].policy")})),
 			),
 		),
 		Entry("should succeed with valid StaticFilterList",
@@ -123,7 +123,7 @@ var _ = Describe("Provider Config Validation", func() {
 			},
 			field.NewPath("config"),
 			ContainElement(
-				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.staticFilterList.network")})),
+				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.staticFilterList[0].network")})),
 			),
 		),
 		Entry("should succeed with empty StaticFilterList",
@@ -135,18 +135,17 @@ var _ = Describe("Provider Config Validation", func() {
 			field.NewPath("config"),
 			BeEmpty(),
 		),
-		Entry("should return error if blackholing enabled but no worker names",
+		Entry("should return error if workers configuration is present but no worker names",
 			&config.Configuration{
 				EgressFilter: &config.EgressFilter{
 					Workers: &config.Workers{
-						BlackholingEnabled: true,
-						Names:              []string{},
+						Names: []string{},
 					},
 				},
 			},
 			field.NewPath("config"),
 			ConsistOf(
-				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.workers.blackholingEnabled")})),
+				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.workers")})),
 			),
 		),
 		Entry("should return error for worker name exceeding max length",
@@ -159,7 +158,7 @@ var _ = Describe("Provider Config Validation", func() {
 			},
 			field.NewPath("config"),
 			ConsistOf(
-				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.workers.names")})),
+				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.workers[0].names")})),
 			),
 		),
 		Entry("should return error for worker name with invalid characters",
@@ -172,7 +171,7 @@ var _ = Describe("Provider Config Validation", func() {
 			},
 			field.NewPath("config"),
 			ConsistOf(
-				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.workers.names")})),
+				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.workers[0].names")})),
 			),
 		),
 		Entry("should return error for empty worker name",
@@ -185,7 +184,7 @@ var _ = Describe("Provider Config Validation", func() {
 			},
 			field.NewPath("config"),
 			ConsistOf(
-				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.workers.names")})),
+				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.workers[0].names")})),
 			),
 		),
 		Entry("should succeed with valid worker names and blackholing enabled",

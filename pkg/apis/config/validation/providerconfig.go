@@ -109,17 +109,17 @@ func validateStaticFilterList(staticFilterList []config.Filter, fldPath *field.P
 	for index, filter := range staticFilterList {
 		if _, _, err := net.ParseCIDR(filter.Network); err != nil {
 			allErrs = append(allErrs, field.Invalid(
-				fldPath.Child("network"),
+				fldPath.Index(index).Child("network"),
 				filter.Network,
-				fmt.Sprintf("filter network at index %d must be a valid CIDR", index),
+				"filter network must be a valid CIDR",
 			))
 		}
 
 		if !slices.Contains(allowedPolicies, filter.Policy) {
 			allErrs = append(allErrs, field.Invalid(
-				fldPath.Child("policy"),
+				fldPath.Index(index).Child("policy"),
 				filter.Policy,
-				fmt.Sprintf("filter policy at index %d must be one of: %v", index, allowedPolicies),
+				fmt.Sprintf("filter policy must be one of: %v", allowedPolicies),
 			))
 		}
 	}
@@ -135,7 +135,7 @@ func validateWorkersConfig(workers *config.Workers, fldPath *field.Path) field.E
 
 	if len(workers.Names) == 0 {
 		allErrs = append(allErrs, field.Invalid(
-			fldPath.Child("blackholingEnabled"),
+			fldPath,
 			workers.BlackholingEnabled,
 			"at least one worker name must be specified",
 		))
@@ -144,13 +144,13 @@ func validateWorkersConfig(workers *config.Workers, fldPath *field.Path) field.E
 	for index, name := range workers.Names {
 		if len(name) > constants.MaxWorkerNameLength {
 			allErrs = append(allErrs, field.Invalid(
-				fldPath.Child("names"),
+				fldPath.Index(index).Child("names"),
 				name,
-				fmt.Sprintf("worker name at index %d must not exceed %d characters", index, constants.MaxWorkerNameLength),
+				fmt.Sprintf("worker name must not exceed %d characters", constants.MaxWorkerNameLength),
 			))
 		}
 		for _, msg := range validation.IsDNS1123Label(name) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("names"), name, fmt.Sprintf("worker name at index %d is not valid: %s", index, msg)))
+			allErrs = append(allErrs, field.Invalid(fldPath.Index(index).Child("names"), name, fmt.Sprintf("worker name is not valid: %s", msg)))
 		}
 	}
 	return allErrs
