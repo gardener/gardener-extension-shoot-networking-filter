@@ -104,7 +104,7 @@ func createShoot(generateName string, blackholing bool, blockAddress string, use
 			SecretBindingName: ptr.To("local"),
 			CloudProfileName:  ptr.To("local"),
 			Kubernetes: gardencorev1beta1.Kubernetes{
-				Version: "1.27.1",
+				Version: "1.29.0",
 				Kubelet: &gardencorev1beta1.KubeletConfig{
 					SerializeImagePulls: ptr.To(false),
 					RegistryPullQPS:     ptr.To(int32(10)),
