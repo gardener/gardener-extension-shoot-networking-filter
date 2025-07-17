@@ -22,6 +22,9 @@ const (
 	// ManagedResourceNamesSeed is the name used to describe the managed resources for the seed.
 	ManagedResourceNamesSeed = extensionServiceName + "-seed"
 
+	// MaxWorkerNameLength is the maximum length of a worker name.
+	MaxWorkerNameLength = 15
+
 	// ApplicationName is the name for resource describing the components deployed by the extension controller.
 	ApplicationName = "egress-filter-applier"
 

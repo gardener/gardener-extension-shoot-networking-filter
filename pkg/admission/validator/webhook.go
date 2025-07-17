@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company and Gardener contributors
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -7,9 +7,12 @@ package validator
 import (
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
 )
 
 const (
@@ -31,7 +34,7 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		},
 		Target: extensionswebhook.TargetSeed,
 		ObjectSelector: &metav1.LabelSelector{
-			MatchLabels: map[string]string{"extensions.extensions.gardener.cloud/shoot-networking-filter": "true"},
+			MatchLabels: map[string]string{v1beta1constants.LabelExtensionExtensionTypePrefix + constants.ExtensionType: "true"},
 		},
 	})
 }

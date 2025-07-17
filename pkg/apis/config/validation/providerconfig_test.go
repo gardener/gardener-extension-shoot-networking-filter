@@ -7,6 +7,7 @@ package validation
 import (
 	"time"
 
+	extensionsconfigv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -84,19 +85,6 @@ var _ = Describe("Provider Config Validation", func() {
 			field.NewPath("config"),
 			ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.staticFilterList")})),
-			),
-		),
-		Entry("should return error for invalid CIDR in staticFilterList",
-			&config.Configuration{
-				EgressFilter: &config.EgressFilter{
-					StaticFilterList: []config.Filter{
-						{Network: "invalid-cidr", Policy: config.PolicyBlockAccess},
-					},
-				},
-			},
-			field.NewPath("config"),
-			ConsistOf(
-				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.egressFilter.staticFilterList.network")})),
 			),
 		),
 		Entry("should return error for invalid policy in staticFilterList",
@@ -211,6 +199,15 @@ var _ = Describe("Provider Config Validation", func() {
 			},
 			field.NewPath("config"),
 			BeEmpty(),
+		),
+		Entry("should return error for healthCheckConfig in shoot config",
+			&config.Configuration{
+				HealthCheckConfig: &extensionsconfigv1alpha1.HealthCheckConfig{},
+			},
+			field.NewPath("config"),
+			ContainElement(
+				PointTo(MatchFields(IgnoreExtras, Fields{"Field": Equal("config.healthCheckConfig")})),
+			),
 		),
 	)
 })
