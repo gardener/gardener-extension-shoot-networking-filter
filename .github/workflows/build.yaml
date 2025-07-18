@@ -61,6 +61,18 @@ jobs:
                   availability_requirement: low
               - name: imagevector.gardener.cloud/repository
                 value: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/runtime-networking-filter
+          - name: gardener-extension-shoot-networking-filter-admission
+            target: gardener-extension-shoot-networking-filter-admission
+            oci-repository: gardener/extensions/shoot-networking-filter-admission
+            ocm-labels:
+              name: gardener.cloud/cve-categorisation
+              value:
+                network_exposure: protected
+                authentication_enforced: false
+                user_interaction: gardener-operator
+                confidentiality_requirement: low
+                integrity_requirement: high
+                availability_requirement: high
     with:
       name: ${{ matrix.args.name }}
       version: ${{ needs.prepare.outputs.version }}
@@ -91,6 +103,22 @@ jobs:
               - ref: ocm-resource:gardener-extension-shoot-networking-filter.repository
                 attribute: image.repository
               - ref: ocm-resource:gardener-extension-shoot-networking-filter.tag
+                attribute: image.tag
+          - name: shoot-networking-filter-admission-application
+            dir: charts/gardener-extension-shoot-networking-filter-admission/charts/application
+            oci-repository: charts/gardener/extensions
+            ocm-mappings:
+              - ref: ocm-resource:gardener-extension-shoot-networking-filter.repository
+                attribute: image.repository
+              - ref: ocm-resource:gardener-extension-shoot-networking-filter.tag
+                attribute: image.tag
+          - name: shoot-networking-filter-admission-runtime
+            dir: charts/gardener-extension-shoot-networking-filter-admission/charts/runtime
+            oci-repository: charts/gardener/extensions
+            ocm-mappings:
+              - ref: ocm-resource:gardener-extension-shoot-networking-filter-admission.repository
+                attribute: image.repository
+              - ref: ocm-resource:gardener-extension-shoot-networking-filter-admission.tag
                 attribute: image.tag
           - name: runtime-networking-filter
             dir: charts/gardener-runtime-networking-filter
