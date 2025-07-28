@@ -69,7 +69,7 @@ func createShoot(generateName string, blackholing bool, blockAddress string, use
 				},
 				{
 					Network: "130.214.229.163/32",
-					Policy:  "BLOCK_ADDRESS",
+					Policy:  "BLOCK_ACCESS",
 				},
 			},
 		},

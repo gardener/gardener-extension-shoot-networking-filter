@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -225,6 +226,16 @@ func (p *DownloaderFilterListProvider) download() ([]config.Filter, error) {
 	err = json.Unmarshal(b, &filterList)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling body failed with %w", err)
+	}
+
+	if len(filterList) > constants.FilterListMaxEntries {
+		return nil, fmt.Errorf("filterList too large: %d entries (max %d)", len(filterList), constants.FilterListMaxEntries)
+	}
+
+	for i, filter := range filterList {
+		if _, _, err := net.ParseCIDR(filter.Network); err != nil {
+			return nil, fmt.Errorf("filterList[%d].network: %q  %w", i, filter.Network, err)
+		}
 	}
 	return filterList, nil
 }
