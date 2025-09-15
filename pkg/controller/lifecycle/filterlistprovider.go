@@ -225,7 +225,8 @@ func (p *DownloaderFilterListProvider) download() ([]config.Filter, error) {
 	var filterList []config.Filter
 	err = json.Unmarshal(b, &filterList)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshalling body failed with %w", err)
+		wrappedErr := fmt.Errorf("could not unmarshal body: '%s'", string(b))
+		return nil, fmt.Errorf("unmarshalling body failed with %w (%w)", err, wrappedErr)
 	}
 
 	if len(filterList) > constants.FilterListMaxEntries {
