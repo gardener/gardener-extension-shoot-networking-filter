@@ -115,7 +115,7 @@ func createShoot(generateName string, blackholing bool, blockAddress string, use
 				Type:           ptr.To("calico"),
 				Pods:           ptr.To("10.3.0.0/16"),
 				Services:       ptr.To("10.4.0.0/16"),
-				Nodes:          ptr.To("10.5.0.0/16"),
+				Nodes:          ptr.To("10.0.0.0/16"),
 				ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"calico.networking.extensions.gardener.cloud/v1alpha1","kind":"NetworkConfig","typha":{"enabled":false},"backend":"none"}`)},
 			},
 			Extensions: []gardencorev1beta1.Extension{
