@@ -1,0 +1,17 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+aliases:
+  gardener-extension-shoot-networking-filter-reviewers:
+  - axel7born
+  - DockToFuture
+  - domdom82
+  - MartinWeindel
+  - marwinski
+  - ScheererJ
+  gardener-extension-shoot-networking-filter-approvers:
+  - axel7born
+  - DockToFuture
+  - domdom82
+  - MartinWeindel
+  - marwinski
+  - ScheererJ
