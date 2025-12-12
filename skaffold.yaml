@@ -31,7 +31,7 @@ build:
         main: ./cmd/gardener-extension-shoot-networking-filter/
 
   insecureRegistries:
-    - garden.local.gardener.cloud:5001
+    - registry.local.gardener.cloud:5000
 manifests:
   kustomize:
     paths:
