@@ -1,0 +1,15 @@
+ocm:
+  component_name: github.com/gardener/egress-filter-refresher
+  component_version: 0.18.1
+release_notes:
+- audience: user
+  author:
+    hostname: github.com
+    type: githubUser
+    username: axel7born
+  category: feature
+  contents: Add automatic NAT64 mapping for IPv4 addresses in IPv6 egress filters
+    using the well-known prefix 64:ff9b::/96
+  mimetype: text/markdown
+  reference: '[#77](https://github.com/gardener/egress-filter-refresher/pull/77)'
+  type: standard
