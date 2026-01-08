@@ -1,6 +1,6 @@
 module github.com/gardener/gardener-extension-shoot-networking-filter
 
-go 1.24.5
+go 1.25.5
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
