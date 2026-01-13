@@ -248,40 +248,51 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 }
 
 func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, filterList []config.Filter) (map[string][]byte, error) {
-	secretData, err := a.provider.ReadSecretData(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if a.serviceConfig.EgressFilter.EnsureConnectivity == nil || len(a.serviceConfig.EgressFilter.EnsureConnectivity.SeedNamespaces) == 0 {
-		return secretData, err
-	}
+	// Get the raw filter list from provider (stored in memory)
+	downloadedFilterList := a.provider.GetFilterList()
 
-	seedLoadBalancerIPs, err := a.collectSeedLoadBalancersIPs(ctx, a.serviceConfig.EgressFilter.EnsureConnectivity.SeedNamespaces)
-	if err != nil {
-		return nil, err
-	}
+	// Combine with shoot-specific static filter list
+	combinedFilterList := append(downloadedFilterList, filterList...)
 
-	secretData, err = appendStaticIPs(a.logger, secretData, filterList)
+	// Generate IPv4/IPv6 lists from combined filter list
+	ipv4List, ipv6List, err := generateEgressFilterValues(combinedFilterList, a.logger)
 	if err != nil {
 		return nil, err
 	}
 
-	filteredSecretData, err := filterSecretDataForIPs(a.logger, secretData, seedLoadBalancerIPs)
-	if err != nil {
-		return nil, err
+	a.logger.Info("filter lists generated", constants.KeyIPV4List, len(ipv4List), constants.KeyIPV6List, len(ipv6List))
+
+	secretData := map[string][]byte{
+		constants.KeyIPV4List: []byte(convertToPlainYamlList(ipv4List)),
+		constants.KeyIPV6List: []byte(convertToPlainYamlList(ipv6List)),
 	}
 
-	modified := false
-	for _, key := range []string{constants.KeyIPV4List, constants.KeyIPV6List} {
-		if len(secretData[key]) != len(filteredSecretData[key]) {
-			modified = true
-			a.logger.Info(fmt.Sprintf("modified filterList %s: len changed from %d to %d", key, len(secretData[key]), len(filteredSecretData[key])))
+	// Apply seed load balancer filtering if configured
+	if a.serviceConfig.EgressFilter.EnsureConnectivity != nil && len(a.serviceConfig.EgressFilter.EnsureConnectivity.SeedNamespaces) > 0 {
+		seedLoadBalancerIPs, err := a.collectSeedLoadBalancersIPs(ctx, a.serviceConfig.EgressFilter.EnsureConnectivity.SeedNamespaces)
+		if err != nil {
+			return nil, err
 		}
+
+		filteredSecretData, err := filterSecretDataForIPs(a.logger, secretData, seedLoadBalancerIPs)
+		if err != nil {
+			return nil, err
+		}
+
+		modified := false
+		for _, key := range []string{constants.KeyIPV4List, constants.KeyIPV6List} {
+			if len(secretData[key]) != len(filteredSecretData[key]) {
+				modified = true
+				a.logger.Info(fmt.Sprintf("modified filterList %s: len changed from %d to %d", key, len(secretData[key]), len(filteredSecretData[key])))
+			}
+		}
+		if !modified {
+			a.logger.Info("filterList unmodified by seed load balancers")
+		}
+		return filteredSecretData, nil
 	}
-	if !modified {
-		a.logger.Info("filterList unmodified by seed load balancers")
-	}
-	return filteredSecretData, err
+
+	return secretData, nil
 }
 
 func (a *actuator) getRuntimeOrSeedManagedResourceName() (string, error) {

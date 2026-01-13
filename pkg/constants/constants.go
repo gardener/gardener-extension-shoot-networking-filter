@@ -41,6 +41,8 @@ const (
 	// FilterListMaxEntries is the maximum number of entries in the filter list
 	FilterListMaxEntries = 50000
 
+	// KeyFilterList is the key in the filter list secret for the raw filter list
+	KeyFilterList = "filter-list"
 	// KeyIPV4List is the key in the filter list secret for the ipv4 policy list
 	KeyIPV4List = "ipv4-list"
 	// KeyIPV6List is the key in the filter list secret for the ipv6 policy list
