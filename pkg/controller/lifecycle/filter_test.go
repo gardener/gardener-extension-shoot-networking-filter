@@ -61,6 +61,39 @@ var _ = Describe("Filter methods", func() {
 		Entry("good list", goodList, []string{"1.2.3.4/31", "1.2.3.0/24"}, []string{"::2/128"}),
 		Entry("ignore invalid CIDRs", invalidCIDRList, []string{}, []string{}),
 		Entry("ignore overlapping CIDRs", overlappingCIDRList, []string{}, []string{}),
+		Entry("allow access splits blocked range",
+			[]config.Filter{
+				{Network: "203.0.113.0/24", Policy: config.PolicyBlockAccess},
+				{Network: "203.0.113.128/32", Policy: config.PolicyAllowAccess},
+			},
+			[]string{"203.0.113.0/25", "203.0.113.192/26", "203.0.113.160/27", "203.0.113.144/28", "203.0.113.136/29", "203.0.113.132/30", "203.0.113.130/31", "203.0.113.129/32"},
+			[]string{},
+		),
+		Entry("multiple allow access entries",
+			[]config.Filter{
+				{Network: "198.51.100.0/24", Policy: config.PolicyBlockAccess},
+				{Network: "198.51.100.64/26", Policy: config.PolicyAllowAccess},
+				{Network: "198.51.100.128/26", Policy: config.PolicyAllowAccess},
+			},
+			[]string{"198.51.100.192/26", "198.51.100.0/26"},
+			[]string{},
+		),
+		Entry("allow access with no overlap",
+			[]config.Filter{
+				{Network: "203.0.113.0/24", Policy: config.PolicyBlockAccess},
+				{Network: "198.51.100.0/24", Policy: config.PolicyAllowAccess},
+			},
+			[]string{"203.0.113.0/24"},
+			[]string{},
+		),
+		Entry("allow access completely removes blocked range",
+			[]config.Filter{
+				{Network: "203.0.113.0/25", Policy: config.PolicyBlockAccess},
+				{Network: "203.0.113.0/24", Policy: config.PolicyAllowAccess},
+			},
+			[]string{},
+			[]string{},
+		),
 	)
 
 	DescribeTable("#convertToPlainYamlList", func(list []string, expectedYaml string) {
