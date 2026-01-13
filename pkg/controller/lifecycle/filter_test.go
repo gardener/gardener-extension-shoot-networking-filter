@@ -238,4 +238,155 @@ var _ = Describe("Filter methods", func() {
 		Entry("input1", input1, appendList, expectedAppend2),
 	)
 
+	Describe("#filterByTags", func() {
+		It("should return all entries when no tag filters specified", func() {
+			filterList := []config.Filter{
+				{Network: "1.2.3.4/32", Policy: "BLOCK_ACCESS"},
+				{Network: "5.6.7.8/32", Policy: "BLOCK_ACCESS"},
+			}
+			result := filterByTags(filterList, nil, logger)
+			Expect(result).To(Equal(filterList))
+		})
+
+		It("should filter entries by single tag value", func() {
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"1"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"2"}},
+					},
+				},
+				{
+					Network: "9.10.11.12/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"3"}},
+					},
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "S", Values: []string{"1"}},
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			Expect(len(result)).To(Equal(1))
+			Expect(result[0].Network).To(Equal("1.2.3.4/32"))
+		})
+
+		It("should filter entries by multiple tag values (OR)", func() {
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"1"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"2"}},
+					},
+				},
+				{
+					Network: "9.10.11.12/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"3"}},
+					},
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "S", Values: []string{"1", "2"}},
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			Expect(len(result)).To(Equal(2))
+			networks := []string{result[0].Network, result[1].Network}
+			Expect(networks).To(ConsistOf("1.2.3.4/32", "5.6.7.8/32"))
+		})
+
+		It("should exclude entries without tags when filters are specified", func() {
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"1"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  "BLOCK_ACCESS",
+					// No tags
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "S", Values: []string{"1"}},
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			Expect(len(result)).To(Equal(1))
+			Expect(result[0].Network).To(Equal("1.2.3.4/32"))
+		})
+
+		It("should handle entries with multiple tags", func() {
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"1"}},
+						{Name: "Region", Values: []string{"EU"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"2"}},
+						{Name: "Region", Values: []string{"US"}},
+					},
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "Region", Values: []string{"EU"}},
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			Expect(len(result)).To(Equal(1))
+			Expect(result[0].Network).To(Equal("1.2.3.4/32"))
+		})
+
+		It("should handle tag with multiple values in entry", func() {
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"1", "10"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"2"}},
+					},
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "S", Values: []string{"1"}},
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			Expect(len(result)).To(Equal(1))
+			Expect(result[0].Network).To(Equal("1.2.3.4/32"))
+		})
+	})
+
 })

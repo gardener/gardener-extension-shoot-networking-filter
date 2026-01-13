@@ -47,6 +47,19 @@ type EgressFilter struct {
 
 	// EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.
 	EnsureConnectivity *EnsureConnectivity
+
+	// TagFilters contains filters to select entries based on tags.
+	// Only used with v2 format filter lists.
+	TagFilters []TagFilter
+}
+
+// TagFilter specifies a tag-based filter criterion.
+type TagFilter struct {
+	// Name is the tag name to filter on.
+	Name string
+	// Values is the list of allowed tag values.
+	// An entry matches if it has this tag with any of these values.
+	Values []string
 }
 
 type FilterListProviderType string
@@ -78,6 +91,8 @@ type Filter struct {
 	Network string
 	// Policy is the access policy (`BLOCK_ACCESS` or `ALLOW_ACCESS`).
 	Policy Policy
+	// Tags contains metadata tags for the entry (preserved from v2 format).
+	Tags []Tag
 }
 
 // FilterListV2 represents the v2 policy list format.

@@ -128,6 +128,7 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 
 	if a.serviceConfig.EgressFilter != nil {
 		blackholingEnabled = a.serviceConfig.EgressFilter.BlackholingEnabled
+		tagFilters := a.serviceConfig.EgressFilter.TagFilters
 
 		if a.serviceConfig.EgressFilter.SleepDuration != nil {
 			sleepDuration = a.serviceConfig.EgressFilter.SleepDuration.Duration.String()
@@ -136,6 +137,11 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		if internalShootConfig.EgressFilter != nil {
 			blackholingEnabled = internalShootConfig.EgressFilter.BlackholingEnabled
 			staticFilterList = internalShootConfig.EgressFilter.StaticFilterList
+
+			if len(internalShootConfig.EgressFilter.TagFilters) > 0 {
+				tagFilters = internalShootConfig.EgressFilter.TagFilters
+			}
+
 			if isShootDeployment {
 				if internalShootConfig.EgressFilter.Workers != nil {
 					blackholingEnabledByWorker = make(map[string]bool)
@@ -161,7 +167,7 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		}
 
 		var err error
-		secretData, err = a.readAndRestrictFilterListSecretData(ctx, staticFilterList)
+		secretData, err = a.readAndRestrictFilterListSecretData(ctx, staticFilterList, tagFilters)
 		if err != nil {
 			return err
 		}
@@ -247,9 +253,14 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 	return a.Delete(ctx, log, ex)
 }
 
-func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, filterList []config.Filter) (map[string][]byte, error) {
+func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, filterList []config.Filter, tagFilters []config.TagFilter) (map[string][]byte, error) {
 	// Get the raw filter list from provider (stored in memory)
 	downloadedFilterList := a.provider.GetFilterList()
+
+	// Apply tag filters if configured
+	if len(tagFilters) > 0 {
+		downloadedFilterList = filterByTags(downloadedFilterList, tagFilters, a.logger)
+	}
 
 	// Combine with shoot-specific static filter list
 	combinedFilterList := append(downloadedFilterList, filterList...)
@@ -305,6 +316,54 @@ func (a *actuator) getRuntimeOrSeedManagedResourceName() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("no managed resource name as extension classes unexpected")
+}
+
+// filterByTags filters the filter list based on tag criteria.
+// An entry is included if it matches ANY of the tag filters.
+func filterByTags(filterList []config.Filter, tagFilters []config.TagFilter, logger logr.Logger) []config.Filter {
+	if len(tagFilters) == 0 {
+		return filterList
+	}
+
+	var result []config.Filter
+	for _, filter := range filterList {
+		if matchesAnyTagFilter(filter, tagFilters) {
+			result = append(result, filter)
+		}
+	}
+
+	logger.Info("filtered by tags", "original", len(filterList), "filtered", len(result))
+	return result
+}
+
+// matchesAnyTagFilter checks if a filter matches any of the tag filters.
+func matchesAnyTagFilter(filter config.Filter, tagFilters []config.TagFilter) bool {
+	if len(tagFilters) == 0 {
+		return true
+	}
+
+	// If no tags on filter, exclude it (only include tagged entries)
+	if len(filter.Tags) == 0 {
+		return false
+	}
+
+	// Check if filter has any of the requested tags with matching values
+	for _, tagFilter := range tagFilters {
+		for _, filterTag := range filter.Tags {
+			if filterTag.Name == tagFilter.Name {
+				// Check if any value matches
+				for _, filterValue := range filterTag.Values {
+					for _, allowedValue := range tagFilter.Values {
+						if filterValue == allowedValue {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 func (a *actuator) collectSeedLoadBalancersIPs(ctx context.Context, namespaces []string) ([]net.IP, error) {

@@ -15,7 +15,6 @@ import (
 	"os"
 	"time"
 
-	// "github.com/gardener/gardener/pkg/controllerutils"
 	"github.com/go-logr/logr"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -250,6 +249,7 @@ func convertV2ToV1(filterListV2 []config.FilterListV2) []config.Filter {
 			filter := config.Filter{
 				Network: entry.Target,
 				Policy:  convertPolicyV2ToV1(entry.Policy),
+				Tags:    entry.Tags, // Preserve tags from v2 format
 			}
 			result = append(result, filter)
 		}

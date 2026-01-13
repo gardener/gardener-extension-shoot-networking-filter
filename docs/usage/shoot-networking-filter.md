@@ -135,3 +135,25 @@ Policy-Filter-Dropped:IN=califb3eb82ef50 OUT=ens5 MAC=ee:ee:ee:ee:ee:ee:8a:7f:1f
 Please note that the log message includes the source (`SRC`) and destination (`DST`) IP addresses and the port numbers (`SPT` & `DPT`).
 
 The block events can be viewed using the `dmesg` command or various other tools displaying linux kernel logs. They are also available via the Gardener observability tools.
+
+## Tag-Based Filtering for v2 Format Filter Lists
+
+The Gardener shoot networking filter extension supports tag-based filtering for v2 format filter lists. This allows you to selectively apply network filter entries based on metadata tags associated with each entry.
+
+Tag filters are configured in the `Configuration` resource under `egressFilter.tagFilters`:
+
+```yaml
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+...
+spec:
+  extensions:
+    - type: shoot-networking-filter
+      providerConfig:
+        egressFilter:
+          tagFilters:
+          - name: S
+            values:
+            - "1"
+            - "2"
+```
