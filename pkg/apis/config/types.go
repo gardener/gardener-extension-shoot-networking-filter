@@ -51,6 +51,19 @@ type EgressFilter struct {
 	// TagFilters contains filters to select entries based on tags.
 	// Only used with v2 format filter lists.
 	TagFilters []TagFilter
+
+	// ProjectFilterListSource references a Secret containing additional filter entries.
+	// The Secret must be listed in Shoot.spec.resources for Gardener to sync it automatically.
+	ProjectFilterListSource *SecretRef
+}
+
+// SecretRef references a Secret synced by Gardener.
+type SecretRef struct {
+	// Name is the name of the Secret (must match Shoot.spec.resources entry).
+	Name string
+	// Key is the data key containing the filter list in JSON format.
+	// If omitted, defaults to "filterList".
+	Key string
 }
 
 // TagFilter specifies a tag-based filter criterion.

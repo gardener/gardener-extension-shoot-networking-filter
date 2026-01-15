@@ -157,3 +157,155 @@ spec:
             - "1"
             - "2"
 ```
+
+## Project Secret Filter Source
+
+The extension can read additional filter entries from a Secret that Gardener automatically syncs from the garden cluster to the seed cluster. This is useful when you have a large project specific list of policies.
+
+### 1. Create Secret in Garden Cluster
+
+Create a Secret in your project namespace (garden cluster):
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: blocked-ips
+  namespace: garden-myproject  # Your project namespace
+type: Opaque
+stringData:
+  filterList: |
+    [
+      {"network": "10.250.0.0/16", "policy": "BLOCK_ACCESS"},
+      {"network": "172.31.0.0/16", "policy": "BLOCK_ACCESS"}
+    ]
+```
+
+The filter list supports both v1 and v2 formats.
+
+### 1b. Create Gzipped Secret for Large Filter Lists (Optional)
+
+For very large filter lists (thousands of entries), you can use gzip compression to stay within Kubernetes Secret size limits (1MB). The extension automatically detects and decompresses gzipped data.
+
+**Step 1: Create your filter list file**
+```bash
+cat > filterlist.json <<EOF
+[
+  {
+    "entries": [
+      {"target": "10.250.0.0/16", "policy": "BLOCK"},
+      {"target": "172.31.0.0/16", "policy": "BLOCK"}
+    ]
+  }
+]
+EOF
+```
+
+**Step 2: Compress with gzip**
+```bash
+gzip -c filterlist.json > filterlist.json.gz
+```
+
+**Step 3: Create Secret with compressed data**
+```bash
+kubectl create secret generic additional-blocked-ips \
+  --from-file=filterList=filterlist.json.gz \
+  --namespace=garden-myproject
+```
+
+Or using YAML:
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: additional-blocked-ips
+  namespace: garden-myproject
+type: Opaque
+data:
+  filterList: <base64-encoded-gzipped-data>
+```
+
+To get the base64-encoded gzipped data:
+```bash
+base64 -i filterlist.json.gz
+```
+
+### 2. Add Resource Reference to Shoot Spec
+
+**IMPORTANT**: You must list the Secret in `Shoot.spec.resources` for Gardener to sync it:
+
+```yaml
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+metadata:
+  name: my-shoot
+  namespace: garden-myproject
+spec:
+  # This tells Gardener to sync the Secret to the seed cluster
+  resources:
+  - name: additional-blocked-ips
+    resourceRef:
+      apiVersion: v1
+      kind: Secret
+      name: additional-blocked-ips
+  
+  extensions:
+  - type: shoot-networking-filter
+    providerConfig:
+      apiVersion: shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1
+      kind: Configuration
+      egressFilter:
+        blackholingEnabled: true
+        projectFilterListSource:
+          name: additional-blocked-ips
+          key: filterList  # Optional, defaults to "filterList"
+```
+
+### Format Support
+
+The ConfigMap/Secret data can contain:
+
+**V1 Format:**
+```json
+[
+  {"network": "10.0.0.0/8", "policy": "BLOCK_ACCESS"},
+  {"network": "192.168.1.0/24", "policy": "ALLOW_ACCESS"}
+]
+```
+
+**V2 Format:**
+```json
+[
+  {
+    "entries": [
+      {
+        "target": "10.0.0.0/8",
+        "policy": "BLOCK",
+        "tags": [{"name": "S", "values": ["1"]}]
+      }
+    ]
+  }
+]
+```
+
+### Merge Behavior
+
+The extension supports two filter sources that are mutually exclusive:
+
+**When Project Secret is configured:**
+1. **Project Secret filters** (replaces downloaded data)
+2. Tag filtering (if configured) - applied to project filters
+3. Static filter list (from shoot providerConfig) - merged with project filters
+
+**When no Project Secret is configured:**
+1. Downloaded filter list (from service config)
+2. Tag filtering (if configured) - applied to downloaded filters
+3. Static filter list (from shoot providerConfig) - merged with downloaded filters
+
+**Key Points:**
+- Project Secret filters **replace** (not append to) the downloaded filter list
+- Static filters are always merged regardless of the source
+- Tag filtering is applied to whichever source is active (project or downloaded)
+- If reading the project Secret fails, the extension falls back to downloaded data
+
+This allows to completely override the default filter list while still being able to add shoot-specific static filters.

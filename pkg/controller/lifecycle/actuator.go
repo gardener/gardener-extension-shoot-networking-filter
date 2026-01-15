@@ -5,9 +5,13 @@
 package lifecycle
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"time"
@@ -167,7 +171,11 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		}
 
 		var err error
-		secretData, err = a.readAndRestrictFilterListSecretData(ctx, staticFilterList, tagFilters)
+		var projectFilterListSource *config.SecretRef
+		if internalShootConfig.EgressFilter != nil && isShootDeployment {
+			projectFilterListSource = internalShootConfig.EgressFilter.ProjectFilterListSource
+		}
+		secretData, err = a.readAndRestrictFilterListSecretData(ctx, namespace, staticFilterList, tagFilters, projectFilterListSource)
 		if err != nil {
 			return err
 		}
@@ -253,17 +261,38 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 	return a.Delete(ctx, log, ex)
 }
 
-func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, filterList []config.Filter, tagFilters []config.TagFilter) (map[string][]byte, error) {
-	// Get the raw filter list from provider (stored in memory)
-	downloadedFilterList := a.provider.GetFilterList()
+func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, namespace string, staticFilterList []config.Filter, tagFilters []config.TagFilter, projectFilterListSource *config.SecretRef) (map[string][]byte, error) {
+	var combinedFilterList []config.Filter
 
-	// Apply tag filters if configured
-	if len(tagFilters) > 0 {
-		downloadedFilterList = filterByTags(downloadedFilterList, tagFilters, a.logger)
+	// If project filter list is configured, use it instead of downloaded data
+	if projectFilterListSource != nil {
+		projectFilters, err := a.readProjectFilterList(ctx, namespace, projectFilterListSource)
+		if err != nil {
+			a.logger.Error(err, "failed to read project filter list, falling back to downloaded data")
+			// Fall back to downloaded data on error
+			downloadedFilterList := a.provider.GetFilterList()
+			if len(tagFilters) > 0 {
+				downloadedFilterList = filterByTags(downloadedFilterList, tagFilters, a.logger)
+			}
+			combinedFilterList = append(downloadedFilterList, staticFilterList...)
+		} else {
+			a.logger.Info("using project filter list instead of downloaded data", "projectEntries", len(projectFilters), "staticEntries", len(staticFilterList))
+			// Apply tag filters to project filters if configured
+			if len(tagFilters) > 0 {
+				projectFilters = filterByTags(projectFilters, tagFilters, a.logger)
+			}
+			// Combine static filters with project filters
+			combinedFilterList = append(staticFilterList, projectFilters...)
+		}
+	} else {
+		// No project filter list, use downloaded data
+		downloadedFilterList := a.provider.GetFilterList()
+		if len(tagFilters) > 0 {
+			downloadedFilterList = filterByTags(downloadedFilterList, tagFilters, a.logger)
+		}
+		// Combine static filters with downloaded filters
+		combinedFilterList = append(downloadedFilterList, staticFilterList...)
 	}
-
-	// Combine with shoot-specific static filter list
-	combinedFilterList := append(downloadedFilterList, filterList...)
 
 	// Generate IPv4/IPv6 lists from combined filter list
 	ipv4List, ipv6List, err := generateEgressFilterValues(combinedFilterList, a.logger)
@@ -316,6 +345,80 @@ func (a *actuator) getRuntimeOrSeedManagedResourceName() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("no managed resource name as extension classes unexpected")
+}
+
+// readProjectFilterList reads filter list from a Secret synced to the shoot namespace.
+// The Secret must be referenced in Shoot.spec.resources for automatic syncing.
+func (a *actuator) readProjectFilterList(ctx context.Context, namespace string, ref *config.SecretRef) ([]config.Filter, error) {
+	key := client.ObjectKey{
+		Namespace: namespace,         // Shoot namespace in seed
+		Name:      "ref-" + ref.Name, // Gardener adds "ref-" prefix to synced resources
+	}
+
+	// Get the key, default to "filterList"
+	dataKey := ref.Key
+	if dataKey == "" {
+		dataKey = "filterList"
+	}
+
+	// Read from Secret
+	secret := &corev1.Secret{}
+	if err := a.client.Get(ctx, key, secret); err != nil {
+		return nil, fmt.Errorf("failed to get Secret %s/%s (ensure it's listed in Shoot.spec.resources): %w", key.Namespace, key.Name, err)
+	}
+
+	data, ok := secret.Data[dataKey]
+	if !ok {
+		return nil, fmt.Errorf("key %q not found in Secret %s/%s", dataKey, key.Namespace, key.Name)
+	}
+
+	// Try to decompress if gzip-encoded (check magic bytes 0x1f, 0x8b)
+	if len(data) > 2 && data[0] == 0x1f && data[1] == 0x8b {
+		gr, err := gzip.NewReader(bytes.NewReader(data))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+		}
+		defer gr.Close()
+
+		decompressed, err := io.ReadAll(gr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decompress gzip data: %w", err)
+		}
+		a.logger.Info("decompressed project filter list", "compressed", len(data), "decompressed", len(decompressed))
+		data = decompressed
+	}
+
+	// Parse filter list (supports both v1 and v2 formats)
+	// Detect format by checking structure
+	var raw []map[string]interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON structure: %w", err)
+	}
+
+	// Detect format: v2 has "entries" field, v1 has "network" field
+	isV2Format := false
+	if len(raw) > 0 {
+		_, hasEntries := raw[0]["entries"]
+		_, hasNetwork := raw[0]["network"]
+		isV2Format = hasEntries && !hasNetwork
+	}
+
+	var filters []config.Filter
+	if isV2Format {
+		// Parse as v2 array format
+		var filtersV2 []config.FilterListV2
+		if err := json.Unmarshal(data, &filtersV2); err != nil {
+			return nil, fmt.Errorf("failed to parse as v2 format: %w", err)
+		}
+		filters = convertV2ToV1(filtersV2)
+	} else {
+		// Parse as v1 format
+		if err := json.Unmarshal(data, &filters); err != nil {
+			return nil, fmt.Errorf("failed to parse as v1 format: %w", err)
+		}
+	}
+
+	return filters, nil
 }
 
 // filterByTags filters the filter list based on tag criteria.
