@@ -258,6 +258,21 @@ EnsureConnectivity
 Only used with v2 format filter lists.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>projectFilterListSource</code></br>
+<em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.SecretRef">
+SecretRef
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ProjectFilterListSource references a Secret containing additional filter entries.
+The Secret must be listed in Shoot.spec.resources for Gardener to sync it automatically.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EnsureConnectivity">EnsureConnectivity
@@ -365,6 +380,49 @@ Policy
 <p>
 <p>Policy is the access policy</p>
 </p>
+<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.SecretRef">SecretRef
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
+</p>
+<p>
+<p>SecretRef references a Secret synced by Gardener.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>name</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>Name is the name of the Secret (must match Shoot.spec.resources entry).</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>key</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Key is the data key containing the filter list in JSON format.
+If omitted, defaults to &ldquo;filterList&rdquo;.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Tag">Tag
 </h3>
 <p>
