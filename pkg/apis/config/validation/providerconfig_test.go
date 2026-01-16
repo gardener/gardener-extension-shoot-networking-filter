@@ -74,7 +74,7 @@ var _ = Describe("Provider Config Validation", func() {
 			&config.Configuration{
 				EgressFilter: &config.EgressFilter{
 					StaticFilterList: func() []config.Filter {
-						list := make([]config.Filter, 10001)
+						list := make([]config.Filter, 50001)
 						for i := range list {
 							list[i] = config.Filter{Network: "10.0.0.0/24", Policy: config.PolicyBlockAccess}
 						}

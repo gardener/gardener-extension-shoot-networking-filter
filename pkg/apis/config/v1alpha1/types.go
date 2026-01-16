@@ -54,6 +54,35 @@ type EgressFilter struct {
 	// EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.
 	// +optional
 	EnsureConnectivity *EnsureConnectivity `json:"ensureConnectivity,omitempty"`
+
+	// TagFilters contains filters to select entries based on tags.
+	// Only used with v2 format filter lists.
+	// +optional
+	TagFilters []TagFilter `json:"tagFilters,omitempty"`
+
+	// ProjectFilterListSource references a Secret containing additional filter entries.
+	// The Secret must be listed in Shoot.spec.resources for Gardener to sync it automatically.
+	// +optional
+	ProjectFilterListSource *SecretRef `json:"projectFilterListSource,omitempty"`
+}
+
+// SecretRef references a Secret synced by Gardener.
+type SecretRef struct {
+	// Name is the name of the Secret (must match Shoot.spec.resources entry).
+	Name string `json:"name"`
+	// Key is the data key containing the filter list in JSON format.
+	// If omitted, defaults to "filterList".
+	// +optional
+	Key string `json:"key,omitempty"`
+}
+
+// TagFilter specifies a tag-based filter criterion.
+type TagFilter struct {
+	// Name is the tag name to filter on.
+	Name string `json:"name"`
+	// Values is the list of allowed tag values.
+	// An entry matches if it has this tag with any of these values.
+	Values []string `json:"values"`
 }
 
 type FilterListProviderType string
@@ -81,6 +110,17 @@ type Filter struct {
 	Network string `json:"network"`
 	// Policy is the access policy (`BLOCK_ACCESS` or `ALLOW_ACCESS`).
 	Policy Policy `json:"policy"`
+	// Tags contains metadata tags for the entry (preserved from v2 format).
+	// +optional
+	Tags []Tag `json:"tags,omitempty"`
+}
+
+// Tag represents a metadata tag with a name and values.
+type Tag struct {
+	// Name is the tag name.
+	Name string `json:"name"`
+	// Values is the list of tag values.
+	Values []string `json:"values"`
 }
 
 // DownloaderConfig contains the configuration for the filter list downloader.

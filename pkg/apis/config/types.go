@@ -47,6 +47,32 @@ type EgressFilter struct {
 
 	// EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.
 	EnsureConnectivity *EnsureConnectivity
+
+	// TagFilters contains filters to select entries based on tags.
+	// Only used with v2 format filter lists.
+	TagFilters []TagFilter
+
+	// ProjectFilterListSource references a Secret containing additional filter entries.
+	// The Secret must be listed in Shoot.spec.resources for Gardener to sync it automatically.
+	ProjectFilterListSource *SecretRef
+}
+
+// SecretRef references a Secret synced by Gardener.
+type SecretRef struct {
+	// Name is the name of the Secret (must match Shoot.spec.resources entry).
+	Name string
+	// Key is the data key containing the filter list in JSON format.
+	// If omitted, defaults to "filterList".
+	Key string
+}
+
+// TagFilter specifies a tag-based filter criterion.
+type TagFilter struct {
+	// Name is the tag name to filter on.
+	Name string
+	// Values is the list of allowed tag values.
+	// An entry matches if it has this tag with any of these values.
+	Values []string
 }
 
 type FilterListProviderType string
@@ -66,6 +92,10 @@ const (
 	PolicyAllowAccess Policy = "ALLOW_ACCESS"
 	// PolicyBlockAccess is the `BLOCK_ACCESS` policy
 	PolicyBlockAccess Policy = "BLOCK_ACCESS"
+	// PolicyAllow is the `ALLOW` policy (v2 format)
+	PolicyAllow Policy = "ALLOW"
+	// PolicyBlock is the `BLOCK` policy (v2 format)
+	PolicyBlock Policy = "BLOCK"
 )
 
 // Filter specifies a network-CIDR policy pair.
@@ -74,6 +104,33 @@ type Filter struct {
 	Network string
 	// Policy is the access policy (`BLOCK_ACCESS` or `ALLOW_ACCESS`).
 	Policy Policy
+	// Tags contains metadata tags for the entry (preserved from v2 format).
+	Tags []Tag
+}
+
+// FilterListV2 represents the v2 policy list format.
+// Only the Entries field is used; other fields in the JSON are ignored.
+type FilterListV2 struct {
+	// Entries contains the list of filter entries.
+	Entries []FilterEntryV2 `json:"entries"`
+}
+
+// FilterEntryV2 represents a single filter entry in the v2 format.
+type FilterEntryV2 struct {
+	// Target is the network CIDR of the filter.
+	Target string `json:"target"`
+	// Tags contains metadata tags for the entry.
+	Tags []Tag `json:"tags,omitempty"`
+	// Policy is the access policy (`BLOCK` or `ALLOW`).
+	Policy Policy `json:"policy"`
+}
+
+// Tag represents a metadata tag with a name and values.
+type Tag struct {
+	// Name is the tag name.
+	Name string `json:"name"`
+	// Values is the list of tag values.
+	Values []string `json:"values"`
 }
 
 // DownloaderConfig contains the configuration for the filter list downloader.

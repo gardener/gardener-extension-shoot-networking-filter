@@ -103,6 +103,104 @@ var _ = Describe("DownloaderFilterListProvider", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("filterList[0].network"))
 		})
+
+		It("should download and parse v2 format filter list", func() {
+			filterListV2 := []config.FilterListV2{
+				{
+					Entries: []config.FilterEntryV2{
+						{Target: "10.0.0.0/8", Policy: config.PolicyBlock},
+						{Target: "192.168.1.0/24", Policy: config.PolicyAllow},
+					},
+				},
+			}
+			b, _ := json.Marshal(filterListV2)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write(b)
+			}))
+			defer server.Close()
+			provider.downloaderConfig.Endpoint = server.URL
+
+			result, err := provider.download()
+			Expect(err).To(BeNil())
+			Expect(result).To(HaveLen(2))
+			Expect(result[0].Network).To(Equal("10.0.0.0/8"))
+			Expect(result[0].Policy).To(Equal(config.PolicyBlockAccess))
+			Expect(result[1].Network).To(Equal("192.168.1.0/24"))
+			Expect(result[1].Policy).To(Equal(config.PolicyAllowAccess))
+		})
+
+		It("should correctly detect v1 format when both fields exist", func() {
+			// Ensure v1 format is detected even if JSON happens to have similar field names
+			filters := []config.Filter{
+				{Network: "172.16.0.0/12", Policy: config.PolicyBlockAccess},
+			}
+			b, _ := json.Marshal(filters)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write(b)
+			}))
+			defer server.Close()
+			provider.downloaderConfig.Endpoint = server.URL
+
+			result, err := provider.download()
+			Expect(err).To(BeNil())
+			Expect(result).To(HaveLen(1))
+			Expect(result[0].Network).To(Equal("172.16.0.0/12"))
+			Expect(result[0].Policy).To(Equal(config.PolicyBlockAccess))
+		})
+
+		It("should preserve tags when converting v2 to v1 format", func() {
+			v2List := []config.FilterListV2{
+				{
+					Entries: []config.FilterEntryV2{
+						{
+							Target: "10.0.0.0/8",
+							Policy: config.PolicyBlock,
+							Tags: []config.Tag{
+								{Name: "S", Values: []string{"1"}},
+								{Name: "Region", Values: []string{"EU"}},
+							},
+						},
+						{
+							Target: "192.168.1.0/24",
+							Policy: config.PolicyAllow,
+							Tags: []config.Tag{
+								{Name: "S", Values: []string{"2"}},
+							},
+						},
+					},
+				},
+			}
+			b, _ := json.Marshal(v2List)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write(b)
+			}))
+			defer server.Close()
+			provider.downloaderConfig.Endpoint = server.URL
+
+			result, err := provider.download()
+			Expect(err).To(BeNil())
+			Expect(result).To(HaveLen(2))
+
+			// Verify first entry with tags
+			Expect(result[0].Network).To(Equal("10.0.0.0/8"))
+			Expect(result[0].Policy).To(Equal(config.PolicyBlockAccess))
+			Expect(result[0].Tags).To(HaveLen(2))
+			Expect(result[0].Tags[0].Name).To(Equal("S"))
+			Expect(result[0].Tags[0].Values).To(ConsistOf("1"))
+			Expect(result[0].Tags[1].Name).To(Equal("Region"))
+			Expect(result[0].Tags[1].Values).To(ConsistOf("EU"))
+
+			// Verify second entry with tags
+			Expect(result[1].Network).To(Equal("192.168.1.0/24"))
+			Expect(result[1].Policy).To(Equal(config.PolicyAllowAccess))
+			Expect(result[1].Tags).To(HaveLen(1))
+			Expect(result[1].Tags[0].Name).To(Equal("S"))
+			Expect(result[1].Tags[0].Values).To(ConsistOf("2"))
+		})
+
 	})
 
 	Describe("#getAccessToken", func() {

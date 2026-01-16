@@ -5,9 +5,13 @@
 package lifecycle
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"time"
@@ -128,6 +132,7 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 
 	if a.serviceConfig.EgressFilter != nil {
 		blackholingEnabled = a.serviceConfig.EgressFilter.BlackholingEnabled
+		tagFilters := a.serviceConfig.EgressFilter.TagFilters
 
 		if a.serviceConfig.EgressFilter.SleepDuration != nil {
 			sleepDuration = a.serviceConfig.EgressFilter.SleepDuration.Duration.String()
@@ -136,6 +141,11 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		if internalShootConfig.EgressFilter != nil {
 			blackholingEnabled = internalShootConfig.EgressFilter.BlackholingEnabled
 			staticFilterList = internalShootConfig.EgressFilter.StaticFilterList
+
+			if len(internalShootConfig.EgressFilter.TagFilters) > 0 {
+				tagFilters = internalShootConfig.EgressFilter.TagFilters
+			}
+
 			if isShootDeployment {
 				if internalShootConfig.EgressFilter.Workers != nil {
 					blackholingEnabledByWorker = make(map[string]bool)
@@ -161,7 +171,11 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 		}
 
 		var err error
-		secretData, err = a.readAndRestrictFilterListSecretData(ctx, staticFilterList)
+		var projectFilterListSource *config.SecretRef
+		if internalShootConfig.EgressFilter != nil && isShootDeployment {
+			projectFilterListSource = internalShootConfig.EgressFilter.ProjectFilterListSource
+		}
+		secretData, err = a.readAndRestrictFilterListSecretData(ctx, namespace, staticFilterList, tagFilters, projectFilterListSource)
 		if err != nil {
 			return err
 		}
@@ -247,41 +261,78 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 	return a.Delete(ctx, log, ex)
 }
 
-func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, filterList []config.Filter) (map[string][]byte, error) {
-	secretData, err := a.provider.ReadSecretData(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if a.serviceConfig.EgressFilter.EnsureConnectivity == nil || len(a.serviceConfig.EgressFilter.EnsureConnectivity.SeedNamespaces) == 0 {
-		return secretData, err
-	}
+func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, namespace string, staticFilterList []config.Filter, tagFilters []config.TagFilter, projectFilterListSource *config.SecretRef) (map[string][]byte, error) {
+	var combinedFilterList []config.Filter
 
-	seedLoadBalancerIPs, err := a.collectSeedLoadBalancersIPs(ctx, a.serviceConfig.EgressFilter.EnsureConnectivity.SeedNamespaces)
-	if err != nil {
-		return nil, err
-	}
-
-	secretData, err = appendStaticIPs(a.logger, secretData, filterList)
-	if err != nil {
-		return nil, err
-	}
-
-	filteredSecretData, err := filterSecretDataForIPs(a.logger, secretData, seedLoadBalancerIPs)
-	if err != nil {
-		return nil, err
-	}
-
-	modified := false
-	for _, key := range []string{constants.KeyIPV4List, constants.KeyIPV6List} {
-		if len(secretData[key]) != len(filteredSecretData[key]) {
-			modified = true
-			a.logger.Info(fmt.Sprintf("modified filterList %s: len changed from %d to %d", key, len(secretData[key]), len(filteredSecretData[key])))
+	// If project filter list is configured, use it instead of downloaded data
+	if projectFilterListSource != nil {
+		projectFilters, err := a.readProjectFilterList(ctx, namespace, projectFilterListSource)
+		if err != nil {
+			a.logger.Error(err, "failed to read project filter list, falling back to downloaded data")
+			// Fall back to downloaded data on error
+			downloadedFilterList := a.provider.GetFilterList()
+			if len(tagFilters) > 0 {
+				downloadedFilterList = filterByTags(downloadedFilterList, tagFilters, a.logger)
+			}
+			combinedFilterList = append(downloadedFilterList, staticFilterList...)
+		} else {
+			a.logger.Info("using project filter list instead of downloaded data", "projectEntries", len(projectFilters), "staticEntries", len(staticFilterList))
+			// Apply tag filters to project filters if configured
+			if len(tagFilters) > 0 {
+				projectFilters = filterByTags(projectFilters, tagFilters, a.logger)
+			}
+			// Combine static filters with project filters
+			combinedFilterList = append(staticFilterList, projectFilters...)
 		}
+	} else {
+		// No project filter list, use downloaded data
+		downloadedFilterList := a.provider.GetFilterList()
+		if len(tagFilters) > 0 {
+			downloadedFilterList = filterByTags(downloadedFilterList, tagFilters, a.logger)
+		}
+		// Combine static filters with downloaded filters
+		combinedFilterList = append(downloadedFilterList, staticFilterList...)
 	}
-	if !modified {
-		a.logger.Info("filterList unmodified by seed load balancers")
+
+	// Generate IPv4/IPv6 lists from combined filter list
+	ipv4List, ipv6List, err := generateEgressFilterValues(combinedFilterList, a.logger)
+	if err != nil {
+		return nil, err
 	}
-	return filteredSecretData, err
+
+	a.logger.Info("filter lists generated", constants.KeyIPV4List, len(ipv4List), constants.KeyIPV6List, len(ipv6List))
+
+	secretData := map[string][]byte{
+		constants.KeyIPV4List: []byte(convertToPlainYamlList(ipv4List)),
+		constants.KeyIPV6List: []byte(convertToPlainYamlList(ipv6List)),
+	}
+
+	// Apply seed load balancer filtering if configured
+	if a.serviceConfig.EgressFilter.EnsureConnectivity != nil && len(a.serviceConfig.EgressFilter.EnsureConnectivity.SeedNamespaces) > 0 {
+		seedLoadBalancerIPs, err := a.collectSeedLoadBalancersIPs(ctx, a.serviceConfig.EgressFilter.EnsureConnectivity.SeedNamespaces)
+		if err != nil {
+			return nil, err
+		}
+
+		filteredSecretData, err := filterSecretDataForIPs(a.logger, secretData, seedLoadBalancerIPs)
+		if err != nil {
+			return nil, err
+		}
+
+		modified := false
+		for _, key := range []string{constants.KeyIPV4List, constants.KeyIPV6List} {
+			if len(secretData[key]) != len(filteredSecretData[key]) {
+				modified = true
+				a.logger.Info(fmt.Sprintf("modified filterList %s: len changed from %d to %d", key, len(secretData[key]), len(filteredSecretData[key])))
+			}
+		}
+		if !modified {
+			a.logger.Info("filterList unmodified by seed load balancers")
+		}
+		return filteredSecretData, nil
+	}
+
+	return secretData, nil
 }
 
 func (a *actuator) getRuntimeOrSeedManagedResourceName() (string, error) {
@@ -294,6 +345,128 @@ func (a *actuator) getRuntimeOrSeedManagedResourceName() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("no managed resource name as extension classes unexpected")
+}
+
+// readProjectFilterList reads filter list from a Secret synced to the shoot namespace.
+// The Secret must be referenced in Shoot.spec.resources for automatic syncing.
+func (a *actuator) readProjectFilterList(ctx context.Context, namespace string, ref *config.SecretRef) ([]config.Filter, error) {
+	key := client.ObjectKey{
+		Namespace: namespace,         // Shoot namespace in seed
+		Name:      "ref-" + ref.Name, // Gardener adds "ref-" prefix to synced resources
+	}
+
+	// Get the key, default to "filterList"
+	dataKey := ref.Key
+	if dataKey == "" {
+		dataKey = "filterList"
+	}
+
+	// Read from Secret
+	secret := &corev1.Secret{}
+	if err := a.client.Get(ctx, key, secret); err != nil {
+		return nil, fmt.Errorf("failed to get Secret %s/%s (ensure it's listed in Shoot.spec.resources): %w", key.Namespace, key.Name, err)
+	}
+
+	data, ok := secret.Data[dataKey]
+	if !ok {
+		return nil, fmt.Errorf("key %q not found in Secret %s/%s", dataKey, key.Namespace, key.Name)
+	}
+
+	// Try to decompress if gzip-encoded (check magic bytes 0x1f, 0x8b)
+	if len(data) > 2 && data[0] == 0x1f && data[1] == 0x8b {
+		gr, err := gzip.NewReader(bytes.NewReader(data))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+		}
+		defer gr.Close()
+
+		decompressed, err := io.ReadAll(gr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decompress gzip data: %w", err)
+		}
+		a.logger.Info("decompressed project filter list", "compressed", len(data), "decompressed", len(decompressed))
+		data = decompressed
+	}
+
+	// Parse filter list (supports both v1 and v2 formats)
+	// Detect format by checking structure
+	var raw []map[string]interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON structure: %w", err)
+	}
+
+	// Detect format: v2 has "entries" field, v1 has "network" field
+	isV2Format := false
+	if len(raw) > 0 {
+		_, hasEntries := raw[0]["entries"]
+		_, hasNetwork := raw[0]["network"]
+		isV2Format = hasEntries && !hasNetwork
+	}
+
+	var filters []config.Filter
+	if isV2Format {
+		// Parse as v2 array format
+		var filtersV2 []config.FilterListV2
+		if err := json.Unmarshal(data, &filtersV2); err != nil {
+			return nil, fmt.Errorf("failed to parse as v2 format: %w", err)
+		}
+		filters = convertV2ToV1(filtersV2)
+	} else {
+		// Parse as v1 format
+		if err := json.Unmarshal(data, &filters); err != nil {
+			return nil, fmt.Errorf("failed to parse as v1 format: %w", err)
+		}
+	}
+
+	return filters, nil
+}
+
+// filterByTags filters the filter list based on tag criteria.
+// An entry is included if it matches ANY of the tag filters.
+func filterByTags(filterList []config.Filter, tagFilters []config.TagFilter, logger logr.Logger) []config.Filter {
+	if len(tagFilters) == 0 {
+		return filterList
+	}
+
+	var result []config.Filter
+	for _, filter := range filterList {
+		if matchesAnyTagFilter(filter, tagFilters) {
+			result = append(result, filter)
+		}
+	}
+
+	logger.Info("filtered by tags", "original", len(filterList), "filtered", len(result))
+	return result
+}
+
+// matchesAnyTagFilter checks if a filter matches any of the tag filters.
+func matchesAnyTagFilter(filter config.Filter, tagFilters []config.TagFilter) bool {
+	if len(tagFilters) == 0 {
+		return true
+	}
+
+	// If no tags on filter, exclude it (only include tagged entries)
+	if len(filter.Tags) == 0 {
+		return false
+	}
+
+	// Check if filter has any of the requested tags with matching values
+	for _, tagFilter := range tagFilters {
+		for _, filterTag := range filter.Tags {
+			if filterTag.Name == tagFilter.Name {
+				// Check if any value matches
+				for _, filterValue := range filterTag.Values {
+					for _, allowedValue := range tagFilter.Values {
+						if filterValue == allowedValue {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 func (a *actuator) collectSeedLoadBalancersIPs(ctx context.Context, namespaces []string) ([]net.IP, error) {

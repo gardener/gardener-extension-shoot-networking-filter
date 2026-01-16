@@ -243,6 +243,36 @@ EnsureConnectivity
 <p>EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>tagFilters</code></br>
+<em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.TagFilter">
+[]TagFilter
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>TagFilters contains filters to select entries based on tags.
+Only used with v2 format filter lists.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>projectFilterListSource</code></br>
+<em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.SecretRef">
+SecretRef
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ProjectFilterListSource references a Secret containing additional filter entries.
+The Secret must be listed in Shoot.spec.resources for Gardener to sync it automatically.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EnsureConnectivity">EnsureConnectivity
@@ -317,6 +347,20 @@ Policy
 <p>Policy is the access policy (<code>BLOCK_ACCESS</code> or <code>ALLOW_ACCESS</code>).</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>tags</code></br>
+<em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Tag">
+[]Tag
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Tags contains metadata tags for the entry (preserved from v2 format).</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.FilterListProviderType">FilterListProviderType
@@ -336,6 +380,132 @@ Policy
 <p>
 <p>Policy is the access policy</p>
 </p>
+<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.SecretRef">SecretRef
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
+</p>
+<p>
+<p>SecretRef references a Secret synced by Gardener.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>name</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>Name is the name of the Secret (must match Shoot.spec.resources entry).</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>key</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Key is the data key containing the filter list in JSON format.
+If omitted, defaults to &ldquo;filterList&rdquo;.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Tag">Tag
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Filter">Filter</a>)
+</p>
+<p>
+<p>Tag represents a metadata tag with a name and values.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>name</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>Name is the tag name.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>values</code></br>
+<em>
+[]string
+</em>
+</td>
+<td>
+<p>Values is the list of tag values.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.TagFilter">TagFilter
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
+</p>
+<p>
+<p>TagFilter specifies a tag-based filter criterion.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>name</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>Name is the tag name to filter on.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>values</code></br>
+<em>
+[]string
+</em>
+</td>
+<td>
+<p>Values is the list of allowed tag values.
+An entry matches if it has this tag with any of these values.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Workers">Workers
 </h3>
 <p>
