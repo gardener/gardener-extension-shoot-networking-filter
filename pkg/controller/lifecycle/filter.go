@@ -170,6 +170,16 @@ func filterSecretDataForIPs(logger logr.Logger, secretData map[string][]byte, lb
 
 func filterIPNetListForIPs(logger logr.Logger, filterList []net.IPNet, lbIPs []net.IP) []net.IPNet {
 	for _, lbIP := range lbIPs {
+		// Convert IP to CIDR (/32 for IPv4, /128 for IPv6)
+		ones := 32
+		if lbIP.To4() == nil {
+			ones = 128
+		}
+		ipAsCIDR := net.IPNet{
+			IP:   lbIP,
+			Mask: net.CIDRMask(ones, ones),
+		}
+
 		var toBeSplitted []net.IPNet
 		for i := len(filterList) - 1; i >= 0; i-- {
 			if filterList[i].Contains(lbIP) {
@@ -180,7 +190,7 @@ func filterIPNetListForIPs(logger logr.Logger, filterList []net.IPNet, lbIPs []n
 		}
 		if len(toBeSplitted) > 0 {
 			for _, cidr := range toBeSplitted {
-				splitted := removeFromCIDR(cidr, lbIP)
+				splitted := removeNetFromCIDR(logger, cidr, ipAsCIDR)
 				filterList = append(filterList, splitted...)
 			}
 		}
@@ -203,7 +213,7 @@ func removeNetFromNetList(logger logr.Logger, blockList []net.IPNet, allowNet ne
 	for _, blockNet := range blockList {
 		if overlaps(blockNet, allowNet) {
 			logger.Info("Carving out allowed network from blocked range", "allowedNetwork", allowNet.String(), "blockedRange", blockNet.String())
-			split := removeNetFromCIDR(blockNet, allowNet)
+			split := removeNetFromCIDR(logger, blockNet, allowNet)
 			result = append(result, split...)
 		} else {
 			result = append(result, blockNet)
@@ -219,7 +229,7 @@ func overlaps(cidr1, cidr2 net.IPNet) bool {
 }
 
 // removeNetFromCIDR removes an allowed network from a blocked CIDR and returns the remaining CIDRs
-func removeNetFromCIDR(blockNet net.IPNet, allowNet net.IPNet) []net.IPNet {
+func removeNetFromCIDR(logger logr.Logger, blockNet net.IPNet, allowNet net.IPNet) []net.IPNet {
 	// If no overlap, return the original blocked network
 	if !overlaps(blockNet, allowNet) {
 		return []net.IPNet{blockNet}
@@ -234,13 +244,8 @@ func removeNetFromCIDR(blockNet net.IPNet, allowNet net.IPNet) []net.IPNet {
 		}
 	}
 
-	// If the blocked network completely contains the allowed network, split it
-	if blockNet.Contains(allowNet.IP) {
-		return splitCIDRAroundSubnet(blockNet, allowNet)
-	}
-
-	// Partial overlap - need to trim the blocked network
-	return []net.IPNet{blockNet}
+	// The blocked network must contain the allowed network, so split it
+	return splitCIDRAroundSubnet(blockNet, allowNet)
 }
 
 // splitCIDRAroundSubnet splits a CIDR to exclude a subnet
@@ -301,33 +306,4 @@ func splitCIDRInHalf(cidr net.IPNet) (net.IPNet, net.IPNet) {
 	}
 
 	return half1, half2
-}
-
-// removeFromCIDR removes a single IP from a CIDR and returns the remaining CIDRs
-func removeFromCIDR(cidr net.IPNet, ip net.IP) []net.IPNet {
-	if !cidr.Contains(ip) {
-		return []net.IPNet{cidr}
-	}
-
-	var result []net.IPNet
-	if x := ip.To4(); x != nil {
-		ip = x
-	}
-	n := len(ip)
-	ones, bits := cidr.Mask.Size()
-
-	for j := ones; j < bits; j++ {
-		m := net.CIDRMask(j, bits)
-		m1 := net.CIDRMask(j+1, bits)
-		out := make(net.IP, n)
-		for i := 0; i < n; i++ {
-			out[i] = (ip[i] ^ (m[i] ^ m1[i])) & m1[i]
-		}
-		subCIDR := net.IPNet{
-			IP:   out,
-			Mask: net.CIDRMask(j+1, bits),
-		}
-		result = append(result, subCIDR)
-	}
-	return result
 }

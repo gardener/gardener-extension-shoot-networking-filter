@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
@@ -105,13 +106,25 @@ var _ = Describe("Filter methods", func() {
 		Entry("good list", []string{"1.2.3.4/31", "1.2.3.0/24"}, "- 1.2.3.4/31\n- 1.2.3.0/24\n"),
 	)
 
-	DescribeTable("#removeFromCIDR", func(ipstr, cidr string, expectedCIDRs []string) {
+	DescribeTable("#removeNetFromCIDR (IP removal)", func(ipstr, cidr string, expectedCIDRs []string) {
+		logger := log.Log.WithName("test")
 		ip := net.ParseIP(ipstr)
 		Expect(ip).NotTo(BeNil())
+
+		// Convert IP to CIDR (/32 for IPv4, /128 for IPv6)
+		ones := 32
+		if ip.To4() == nil {
+			ones = 128
+		}
+		ipAsCIDR := net.IPNet{
+			IP:   ip,
+			Mask: net.CIDRMask(ones, ones),
+		}
+
 		_, pipnet, err := net.ParseCIDR(cidr)
 		Expect(err).To(BeNil())
 		ipnet := *pipnet
-		actual := removeFromCIDR(ipnet, ip)
+		actual := removeNetFromCIDR(logger, ipnet, ipAsCIDR)
 		var actualCIDRs []string
 		for _, a := range actual {
 			actualCIDRs = append(actualCIDRs, a.String())
