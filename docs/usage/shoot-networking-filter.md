@@ -136,11 +136,43 @@ Please note that the log message includes the source (`SRC`) and destination (`D
 
 The block events can be viewed using the `dmesg` command or various other tools displaying linux kernel logs. They are also available via the Gardener observability tools.
 
-## Tag-Based Filtering for v2 Format Filter Lists
+## Tag-Based Filtering
 
-The Gardener shoot networking filter extension supports tag-based filtering for v2 format filter lists. This allows you to selectively apply network filter entries based on metadata tags associated with each entry.
+The extension supports two filter list formats:
 
-Tag filters are configured in the `Configuration` resource under `egressFilter.tagFilters`:
+**Basic Format (v1)** - Simple list without tags:
+```json
+[
+  {"network": "10.0.0.0/8", "policy": "BLOCK_ACCESS"},
+  {"network": "192.168.1.0/24", "policy": "ALLOW_ACCESS"}
+]
+```
+
+**Tag-Based Format (v2)** - Entries with metadata tags for selective filtering:
+```json
+[
+  {
+    "entries": [
+      {
+        "target": "10.0.0.0/8",
+        "policy": "BLOCK",
+        "tags": [{"name": "Fruit", "values": ["Apple"]}]
+      },
+      {
+        "target": "172.16.0.0/12",
+        "policy": "BLOCK",
+        "tags": [{"name": "Fruit", "values": ["Banana"]}]
+      }
+    ]
+  }
+]
+```
+
+When using the tag-based format, you can configure tag filters to selectively apply only entries matching specific tag criteria. This is useful when a centrally-managed filter list contains entries for multiple environments or severity levels, and you want to apply only a subset.
+
+**Important:** Tag filtering uses **OR logic** - an entry is included if it matches **ANY** of the configured tag filters. Within a tag filter, multiple values are also ORed together.
+
+Tag filters are configured in the shoot specification under `egressFilter.tagFilters`:
 
 ```yaml
 apiVersion: core.gardener.cloud/v1beta1
@@ -152,20 +184,23 @@ spec:
       providerConfig:
         egressFilter:
           tagFilters:
-          - name: S
+          - name: Fruit
             values:
-            - "1"
-            - "2"
+            - "Apple"
+            - "Banana"
 ```
 
-## Project Secret Filter Source
+In this example, only entries tagged with `Fruit=Apple` **OR** `Fruit=Banana` will be applied.
 
-The extension can read additional filter entries from a Secret that Gardener automatically syncs from the garden cluster to the seed cluster. This is useful when you have a large project specific list of policies.
+The extension can read filter entries from a Secret that Gardener automatically syncs from the garden cluster to the seed cluster. This is useful when you have a large project-specific list of policies.
+
+**Important:** The project Secret filters **replace** (not append to) the centrally downloaded filter list. This allows you to completely override the default filters while still being able to add shoot-specific static filters. See [Merge Behavior](#merge-behavior) below for details.
 
 ### 1. Create Secret in Garden Cluster
 
-Create a Secret in your project namespace (garden cluster):
+Create a Secret in your project namespace (garden cluster). You can use either the basic format (v1) or tag-based format (v2):
 
+**Example using basic format (v1):**
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -181,11 +216,43 @@ stringData:
     ]
 ```
 
-The filter list supports both v1 and v2 formats.
+**Example using tag-based format (v2):**
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: blocked-ips
+  namespace: garden-myproject  # Your project namespace
+type: Opaque
+stringData:
+  filterList: |
+    [
+      {
+        "entries": [
+          {"target": "10.250.0.0/16", "policy": "BLOCK", "tags": [{"name": "Fruit", "values": ["Apple"]}]},
+          {"target": "172.31.0.0/16", "policy": "BLOCK", "tags": [{"name": "Fruit", "values": ["Banana"]}]}
+        ]
+      }
+    ]
+```
 
 ### 1b. Create Gzipped Secret for Large Filter Lists (Optional)
 
 For very large filter lists (thousands of entries), you can use gzip compression to stay within Kubernetes Secret size limits (1MB). The extension automatically detects and decompresses gzipped data.
+
+**Example using basic format (v1):**
+
+**Step 1: Create your filter list file**
+```bash
+cat > filterlist.json <<EOF
+[
+  {"network": "10.250.0.0/16", "policy": "BLOCK_ACCESS"},
+  {"network": "172.31.0.0/16", "policy": "BLOCK_ACCESS"}
+]
+EOF
+```
+
+**Example using tag-based format (v2):**
 
 **Step 1: Create your filter list file**
 ```bash
@@ -193,8 +260,8 @@ cat > filterlist.json <<EOF
 [
   {
     "entries": [
-      {"target": "10.250.0.0/16", "policy": "BLOCK"},
-      {"target": "172.31.0.0/16", "policy": "BLOCK"}
+      {"target": "10.250.0.0/16", "policy": "BLOCK", "tags": [{"name": "Fruit", "values": ["Apple"]}]},
+      {"target": "172.31.0.0/16", "policy": "BLOCK", "tags": [{"name": "Fruit", "values": ["Banana"]}]}
     ]
   }
 ]
@@ -281,7 +348,7 @@ The ConfigMap/Secret data can contain:
       {
         "target": "10.0.0.0/8",
         "policy": "BLOCK",
-        "tags": [{"name": "S", "values": ["1"]}]
+        "tags": [{"name": "Fruit", "values": ["Apple"]}]
       }
     ]
   }
@@ -307,5 +374,24 @@ The extension supports two filter sources that are mutually exclusive:
 - Static filters are always merged regardless of the source
 - Tag filtering is applied to whichever source is active (project or downloaded)
 - If reading the project Secret fails, the extension falls back to downloaded data
+
+**Examples:**
+
+*Example 1: Project Secret blocks, static filter allows*
+- Project Secret: `{"network": "10.0.0.0/8", "policy": "BLOCK_ACCESS"}`
+- Static filter: `{"network": "10.1.0.0/16", "policy": "ALLOW_ACCESS"}`
+- **Result**: `10.0.0.0/8` is blocked, **except** `10.1.0.0/16` is carved out and allowed
+
+*Example 2: Project Secret allows, static filter blocks*
+- Project Secret: `{"network": "10.0.0.0/8", "policy": "ALLOW_ACCESS"}` (carves out from another block)
+- Static filter: `{"network": "10.1.0.0/16", "policy": "BLOCK_ACCESS"}`
+- **Result**: Both filters are applied - the ALLOW carves out from broader blocks, and the BLOCK adds `10.1.0.0/16` to the block list
+
+*Example 3: Downloaded data vs static filters (when no Project Secret is configured)*
+- Downloaded data: `{"network": "192.168.0.0/16", "policy": "BLOCK_ACCESS"}`
+- Static filter: `{"network": "192.168.1.0/24", "policy": "ALLOW_ACCESS"}`
+- **Result**: `192.168.0.0/16` is blocked, **except** `192.168.1.0/24` is carved out and allowed
+
+The key principle: **ALLOW_ACCESS policies carve out exceptions from BLOCK_ACCESS policies**. All filters from the active source (project Secret OR downloaded) are merged with static filters, then ALLOW entries remove subnets from BLOCK entries.
 
 This allows to completely override the default filter list while still being able to add shoot-specific static filters.

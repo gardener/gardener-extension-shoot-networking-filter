@@ -5,6 +5,8 @@
 package lifecycle
 
 import (
+	"encoding/json"
+	"fmt"
 	"net"
 	"strings"
 
@@ -36,6 +38,45 @@ func init() {
 	_, ipv6RangeFC00, _ := net.ParseCIDR("fc00::/7")
 	privateIPv4Ranges = []net.IPNet{*ipv4Range127, *ipv4Range10, *ipv4Range172, *ipv4Range192, *ipv4Range100, *ipv4Range169}
 	privateIPv6Ranges = []net.IPNet{*ipv6Range1, *ipv6RangeFE80, *ipv6RangeFC00}
+}
+
+// parseFilterList parses JSON data and detects whether it's v1 or v2 format.
+// Returns the parsed filter list in v1 format.
+func parseFilterList(data []byte) ([]config.Filter, error) {
+	// Detect format by checking structure
+	var raw []map[string]interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON structure: %w", err)
+	}
+
+	// Detect format: v2 has "entries" field, v1 has "network" field
+	isV2Format := false
+	if len(raw) > 0 {
+		_, hasEntries := raw[0]["entries"]
+		_, hasNetwork := raw[0]["network"]
+		isV2Format = hasEntries && !hasNetwork
+	}
+
+	var filters []config.Filter
+	var err error
+	if isV2Format {
+		// Parse as v2 array format
+		var filtersV2 []config.FilterListV2
+		if err := json.Unmarshal(data, &filtersV2); err != nil {
+			return nil, fmt.Errorf("failed to parse as v2 format: %w", err)
+		}
+		filters, err = convertV2ToV1(filtersV2)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert v2 to v1 format: %w", err)
+		}
+	} else {
+		// Parse as v1 format
+		if err := json.Unmarshal(data, &filters); err != nil {
+			return nil, fmt.Errorf("failed to parse as v1 format: %w", err)
+		}
+	}
+
+	return filters, nil
 }
 
 func generateEgressFilterValues(entries []config.Filter, logger logr.Logger) ([]string, []string, error) {
@@ -168,17 +209,21 @@ func filterSecretDataForIPs(logger logr.Logger, secretData map[string][]byte, lb
 	return filteredSecretData, nil
 }
 
+// ipToCIDR converts an IP address to a CIDR network (/32 for IPv4, /128 for IPv6)
+func ipToCIDR(ip net.IP) net.IPNet {
+	ones := 32
+	if ip.To4() == nil {
+		ones = 128
+	}
+	return net.IPNet{
+		IP:   ip,
+		Mask: net.CIDRMask(ones, ones),
+	}
+}
+
 func filterIPNetListForIPs(logger logr.Logger, filterList []net.IPNet, lbIPs []net.IP) []net.IPNet {
 	for _, lbIP := range lbIPs {
-		// Convert IP to CIDR (/32 for IPv4, /128 for IPv6)
-		ones := 32
-		if lbIP.To4() == nil {
-			ones = 128
-		}
-		ipAsCIDR := net.IPNet{
-			IP:   lbIP,
-			Mask: net.CIDRMask(ones, ones),
-		}
+		ipAsCIDR := ipToCIDR(lbIP)
 
 		var toBeSplitted []net.IPNet
 		for i := len(filterList) - 1; i >= 0; i-- {
@@ -237,9 +282,9 @@ func removeNetFromCIDR(logger logr.Logger, blockNet net.IPNet, allowNet net.IPNe
 
 	// If the allowed network completely contains the blocked network, remove it entirely
 	if allowNet.Contains(blockNet.IP) {
-		ones1, _ := blockNet.Mask.Size()
-		ones2, _ := allowNet.Mask.Size()
-		if ones2 <= ones1 {
+		blockMaskSize, _ := blockNet.Mask.Size()
+		allowMaskSize, _ := allowNet.Mask.Size()
+		if allowMaskSize <= blockMaskSize {
 			return []net.IPNet{}
 		}
 	}

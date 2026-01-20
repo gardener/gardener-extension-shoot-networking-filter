@@ -111,16 +111,7 @@ var _ = Describe("Filter methods", func() {
 		ip := net.ParseIP(ipstr)
 		Expect(ip).NotTo(BeNil())
 
-		// Convert IP to CIDR (/32 for IPv4, /128 for IPv6)
-		ones := 32
-		if ip.To4() == nil {
-			ones = 128
-		}
-		ipAsCIDR := net.IPNet{
-			IP:   ip,
-			Mask: net.CIDRMask(ones, ones),
-		}
-
+		ipAsCIDR := ipToCIDR(ip)
 		_, pipnet, err := net.ParseCIDR(cidr)
 		Expect(err).To(BeNil())
 		ipnet := *pipnet

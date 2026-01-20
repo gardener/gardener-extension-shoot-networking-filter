@@ -7,7 +7,6 @@ package lifecycle
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -195,39 +194,14 @@ func (p *DownloaderFilterListProvider) download() ([]config.Filter, error) {
 		return nil, err
 	}
 
-	// Detect format by checking structure
-	var raw []map[string]interface{}
-	if err := json.Unmarshal(b, &raw); err != nil {
+	// Parse filter list using common parser
+	filterList, err := parseFilterList(b)
+	if err != nil {
 		wrappedErr := fmt.Errorf("could not unmarshal body: '%s'", string(b))
 		return nil, fmt.Errorf("unmarshalling body failed: %w: %w", err, wrappedErr)
 	}
 
-	// Detect format: v2 has "entries" field, v1 has "network" field
-	isV2Format := false
-	if len(raw) > 0 {
-		_, hasEntries := raw[0]["entries"]
-		_, hasNetwork := raw[0]["network"]
-		isV2Format = hasEntries && !hasNetwork
-	}
-
-	var filterList []config.Filter
-	if isV2Format {
-		var filterListV2 []config.FilterListV2
-		if err := json.Unmarshal(b, &filterListV2); err != nil {
-			return nil, fmt.Errorf("unmarshalling body as v2 format failed: %w", err)
-		}
-		filterList = convertV2ToV1(filterListV2)
-		p.logger.Info("downloaded filter list in v2 format", "entries", len(filterList))
-	} else {
-		if err := json.Unmarshal(b, &filterList); err != nil {
-			return nil, fmt.Errorf("unmarshalling body as v1 format failed: %w", err)
-		}
-		if len(filterList) > 0 {
-			p.logger.Info("downloaded filter list in v1 format", "entries", len(filterList), "firstEntry", filterList[0])
-		} else {
-			p.logger.Info("downloaded filter list in v1 format", "entries", len(filterList))
-		}
-	}
+	p.logger.Info("downloaded filter list", "entries", len(filterList))
 
 	if len(filterList) > constants.FilterListMaxEntries {
 		return nil, fmt.Errorf("filterList too large: %d entries (max %d)", len(filterList), constants.FilterListMaxEntries)
@@ -242,30 +216,34 @@ func (p *DownloaderFilterListProvider) download() ([]config.Filter, error) {
 }
 
 // convertV2ToV1 converts a v2 format filter list to v1 format
-func convertV2ToV1(filterListV2 []config.FilterListV2) []config.Filter {
+func convertV2ToV1(filterListV2 []config.FilterListV2) ([]config.Filter, error) {
 	var result []config.Filter
 	for _, list := range filterListV2 {
 		for _, entry := range list.Entries {
+			policy, err := convertPolicyV2ToV1(entry.Policy)
+			if err != nil {
+				return nil, fmt.Errorf("invalid policy for network %s: %w", entry.Target, err)
+			}
 			filter := config.Filter{
 				Network: entry.Target,
-				Policy:  convertPolicyV2ToV1(entry.Policy),
+				Policy:  policy,
 				Tags:    entry.Tags, // Preserve tags from v2 format
 			}
 			result = append(result, filter)
 		}
 	}
-	return result
+	return result, nil
 }
 
 // convertPolicyV2ToV1 converts v2 policy format to v1 format
-func convertPolicyV2ToV1(policyV2 config.Policy) config.Policy {
+func convertPolicyV2ToV1(policyV2 config.Policy) (config.Policy, error) {
 	switch policyV2 {
 	case config.PolicyBlock:
-		return config.PolicyBlockAccess
+		return config.PolicyBlockAccess, nil
 	case config.PolicyAllow:
-		return config.PolicyAllowAccess
+		return config.PolicyAllowAccess, nil
 	default:
-		return policyV2
+		return "", fmt.Errorf("unknown policy value: %s", policyV2)
 	}
 }
 

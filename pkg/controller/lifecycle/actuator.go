@@ -9,7 +9,6 @@ import (
 	"compress/gzip"
 	"context"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -270,11 +269,7 @@ func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, name
 		if err != nil {
 			a.logger.Error(err, "failed to read project filter list, falling back to downloaded data")
 			// Fall back to downloaded data on error
-			downloadedFilterList := a.provider.GetFilterList()
-			if len(tagFilters) > 0 {
-				downloadedFilterList = filterByTags(downloadedFilterList, tagFilters, a.logger)
-			}
-			combinedFilterList = append(downloadedFilterList, staticFilterList...)
+			combinedFilterList = a.combineDownloadedAndStaticFilters(staticFilterList, tagFilters)
 		} else {
 			a.logger.Info("using project filter list instead of downloaded data", "projectEntries", len(projectFilters), "staticEntries", len(staticFilterList))
 			// Apply tag filters to project filters if configured
@@ -286,12 +281,7 @@ func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, name
 		}
 	} else {
 		// No project filter list, use downloaded data
-		downloadedFilterList := a.provider.GetFilterList()
-		if len(tagFilters) > 0 {
-			downloadedFilterList = filterByTags(downloadedFilterList, tagFilters, a.logger)
-		}
-		// Combine static filters with downloaded filters
-		combinedFilterList = append(downloadedFilterList, staticFilterList...)
+		combinedFilterList = a.combineDownloadedAndStaticFilters(staticFilterList, tagFilters)
 	}
 
 	// Generate IPv4/IPv6 lists from combined filter list
@@ -347,6 +337,15 @@ func (a *actuator) getRuntimeOrSeedManagedResourceName() (string, error) {
 	return "", fmt.Errorf("no managed resource name as extension classes unexpected")
 }
 
+// combineDownloadedAndStaticFilters applies tag filters to downloaded data and combines with static filters
+func (a *actuator) combineDownloadedAndStaticFilters(staticFilterList []config.Filter, tagFilters []config.TagFilter) []config.Filter {
+	downloadedFilterList := a.provider.GetFilterList()
+	if len(tagFilters) > 0 {
+		downloadedFilterList = filterByTags(downloadedFilterList, tagFilters, a.logger)
+	}
+	return append(downloadedFilterList, staticFilterList...)
+}
+
 // readProjectFilterList reads filter list from a Secret synced to the shoot namespace.
 // The Secret must be referenced in Shoot.spec.resources for automatic syncing.
 func (a *actuator) readProjectFilterList(ctx context.Context, namespace string, ref *config.SecretRef) ([]config.Filter, error) {
@@ -372,50 +371,26 @@ func (a *actuator) readProjectFilterList(ctx context.Context, namespace string, 
 		return nil, fmt.Errorf("key %q not found in Secret %s/%s", dataKey, key.Namespace, key.Name)
 	}
 
-	// Try to decompress if gzip-encoded (check magic bytes 0x1f, 0x8b)
-	if len(data) > 2 && data[0] == 0x1f && data[1] == 0x8b {
-		gr, err := gzip.NewReader(bytes.NewReader(data))
-		if err != nil {
-			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
-		}
+	// Try to decompress if gzip-encoded
+	gr, err := gzip.NewReader(bytes.NewReader(data))
+	if err == nil {
 		defer gr.Close()
-
 		decompressed, err := io.ReadAll(gr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decompress gzip data: %w", err)
 		}
 		a.logger.Info("decompressed project filter list", "compressed", len(data), "decompressed", len(decompressed))
 		data = decompressed
+	} else if err != gzip.ErrHeader {
+		// ErrHeader means it's not gzipped (plain text), which is fine
+		// Any other error is a real problem
+		return nil, fmt.Errorf("failed to create gzip reader: %w", err)
 	}
 
 	// Parse filter list (supports both v1 and v2 formats)
-	// Detect format by checking structure
-	var raw []map[string]interface{}
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON structure: %w", err)
-	}
-
-	// Detect format: v2 has "entries" field, v1 has "network" field
-	isV2Format := false
-	if len(raw) > 0 {
-		_, hasEntries := raw[0]["entries"]
-		_, hasNetwork := raw[0]["network"]
-		isV2Format = hasEntries && !hasNetwork
-	}
-
-	var filters []config.Filter
-	if isV2Format {
-		// Parse as v2 array format
-		var filtersV2 []config.FilterListV2
-		if err := json.Unmarshal(data, &filtersV2); err != nil {
-			return nil, fmt.Errorf("failed to parse as v2 format: %w", err)
-		}
-		filters = convertV2ToV1(filtersV2)
-	} else {
-		// Parse as v1 format
-		if err := json.Unmarshal(data, &filters); err != nil {
-			return nil, fmt.Errorf("failed to parse as v1 format: %w", err)
-		}
+	filters, err := parseFilterList(data)
+	if err != nil {
+		return nil, err
 	}
 
 	return filters, nil
