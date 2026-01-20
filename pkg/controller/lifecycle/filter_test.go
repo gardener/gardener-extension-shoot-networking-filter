@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
@@ -61,6 +62,39 @@ var _ = Describe("Filter methods", func() {
 		Entry("good list", goodList, []string{"1.2.3.4/31", "1.2.3.0/24"}, []string{"::2/128"}),
 		Entry("ignore invalid CIDRs", invalidCIDRList, []string{}, []string{}),
 		Entry("ignore overlapping CIDRs", overlappingCIDRList, []string{}, []string{}),
+		Entry("allow access splits blocked range",
+			[]config.Filter{
+				{Network: "203.0.113.0/24", Policy: config.PolicyBlockAccess},
+				{Network: "203.0.113.128/32", Policy: config.PolicyAllowAccess},
+			},
+			[]string{"203.0.113.0/25", "203.0.113.192/26", "203.0.113.160/27", "203.0.113.144/28", "203.0.113.136/29", "203.0.113.132/30", "203.0.113.130/31", "203.0.113.129/32"},
+			[]string{},
+		),
+		Entry("multiple allow access entries",
+			[]config.Filter{
+				{Network: "198.51.100.0/24", Policy: config.PolicyBlockAccess},
+				{Network: "198.51.100.64/26", Policy: config.PolicyAllowAccess},
+				{Network: "198.51.100.128/26", Policy: config.PolicyAllowAccess},
+			},
+			[]string{"198.51.100.192/26", "198.51.100.0/26"},
+			[]string{},
+		),
+		Entry("allow access with no overlap",
+			[]config.Filter{
+				{Network: "203.0.113.0/24", Policy: config.PolicyBlockAccess},
+				{Network: "198.51.100.0/24", Policy: config.PolicyAllowAccess},
+			},
+			[]string{"203.0.113.0/24"},
+			[]string{},
+		),
+		Entry("allow access completely removes blocked range",
+			[]config.Filter{
+				{Network: "203.0.113.0/25", Policy: config.PolicyBlockAccess},
+				{Network: "203.0.113.0/24", Policy: config.PolicyAllowAccess},
+			},
+			[]string{},
+			[]string{},
+		),
 	)
 
 	DescribeTable("#convertToPlainYamlList", func(list []string, expectedYaml string) {
@@ -72,13 +106,16 @@ var _ = Describe("Filter methods", func() {
 		Entry("good list", []string{"1.2.3.4/31", "1.2.3.0/24"}, "- 1.2.3.4/31\n- 1.2.3.0/24\n"),
 	)
 
-	DescribeTable("#removeFromCIDR", func(ipstr, cidr string, expectedCIDRs []string) {
+	DescribeTable("#removeNetFromCIDR (IP removal)", func(ipstr, cidr string, expectedCIDRs []string) {
+		logger := log.Log.WithName("test")
 		ip := net.ParseIP(ipstr)
 		Expect(ip).NotTo(BeNil())
+
+		ipAsCIDR := ipToCIDR(ip)
 		_, pipnet, err := net.ParseCIDR(cidr)
 		Expect(err).To(BeNil())
 		ipnet := *pipnet
-		actual := removeFromCIDR(ipnet, ip)
+		actual := removeNetFromCIDR(logger, ipnet, ipAsCIDR)
 		var actualCIDRs []string
 		for _, a := range actual {
 			actualCIDRs = append(actualCIDRs, a.String())
@@ -204,5 +241,156 @@ var _ = Describe("Filter methods", func() {
 		Entry("empty", empty, appendList, expectedAppend1),
 		Entry("input1", input1, appendList, expectedAppend2),
 	)
+
+	Describe("#filterByTags", func() {
+		It("should return all entries when no tag filters specified", func() {
+			filterList := []config.Filter{
+				{Network: "1.2.3.4/32", Policy: "BLOCK_ACCESS"},
+				{Network: "5.6.7.8/32", Policy: "BLOCK_ACCESS"},
+			}
+			result := filterByTags(filterList, nil, logger)
+			Expect(result).To(Equal(filterList))
+		})
+
+		It("should filter entries by single tag value", func() {
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"1"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"2"}},
+					},
+				},
+				{
+					Network: "9.10.11.12/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"3"}},
+					},
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "S", Values: []string{"1"}},
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			Expect(len(result)).To(Equal(1))
+			Expect(result[0].Network).To(Equal("1.2.3.4/32"))
+		})
+
+		It("should filter entries by multiple tag values (OR)", func() {
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"1"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"2"}},
+					},
+				},
+				{
+					Network: "9.10.11.12/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"3"}},
+					},
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "S", Values: []string{"1", "2"}},
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			Expect(len(result)).To(Equal(2))
+			networks := []string{result[0].Network, result[1].Network}
+			Expect(networks).To(ConsistOf("1.2.3.4/32", "5.6.7.8/32"))
+		})
+
+		It("should exclude entries without tags when filters are specified", func() {
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"1"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  "BLOCK_ACCESS",
+					// No tags
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "S", Values: []string{"1"}},
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			Expect(len(result)).To(Equal(1))
+			Expect(result[0].Network).To(Equal("1.2.3.4/32"))
+		})
+
+		It("should handle entries with multiple tags", func() {
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"1"}},
+						{Name: "Region", Values: []string{"EU"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"2"}},
+						{Name: "Region", Values: []string{"US"}},
+					},
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "Region", Values: []string{"EU"}},
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			Expect(len(result)).To(Equal(1))
+			Expect(result[0].Network).To(Equal("1.2.3.4/32"))
+		})
+
+		It("should handle tag with multiple values in entry", func() {
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"1", "10"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  "BLOCK_ACCESS",
+					Tags: []config.Tag{
+						{Name: "S", Values: []string{"2"}},
+					},
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "S", Values: []string{"1"}},
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			Expect(len(result)).To(Equal(1))
+			Expect(result[0].Network).To(Equal("1.2.3.4/32"))
+		})
+	})
 
 })
