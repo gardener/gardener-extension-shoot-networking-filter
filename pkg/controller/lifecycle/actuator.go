@@ -142,7 +142,8 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 			staticFilterList = internalShootConfig.EgressFilter.StaticFilterList
 
 			if len(internalShootConfig.EgressFilter.TagFilters) > 0 {
-				tagFilters = internalShootConfig.EgressFilter.TagFilters
+				// Append shoot-specific tag filters to service-level filters
+				tagFilters = append(tagFilters, internalShootConfig.EgressFilter.TagFilters...)
 			}
 
 			if isShootDeployment {
@@ -396,52 +397,66 @@ func (a *actuator) readProjectFilterList(ctx context.Context, namespace string, 
 	return filters, nil
 }
 
-// filterByTags filters the filter list based on tag criteria.
-// An entry is included if it matches ANY of the tag filters.
+// filterByTags applies tag-based policy overrides to the filter list.
+// All entries are included, but entries matching tag filters get their policies overridden.
 func filterByTags(filterList []config.Filter, tagFilters []config.TagFilter, logger logr.Logger) []config.Filter {
 	if len(tagFilters) == 0 {
 		return filterList
 	}
 
-	var result []config.Filter
-	for _, filter := range filterList {
-		if matchesAnyTagFilter(filter, tagFilters) {
-			result = append(result, filter)
+	result := make([]config.Filter, len(filterList))
+	overrideCount := 0
+
+	for i, filter := range filterList {
+		result[i] = filter
+		if matchingFilter, matches := getMatchingTagFilterWithPolicy(filter, tagFilters); matches && matchingFilter != nil && matchingFilter.Policy != nil {
+			// Override policy if tag filter specifies one
+			result[i].Policy = *matchingFilter.Policy
+			overrideCount++
 		}
+		// Keep original policy if no matching tag filter or no policy specified
 	}
 
-	logger.Info("filtered by tags", "original", len(filterList), "filtered", len(result))
+	logger.Info("applied tag-based policy overrides", "total", len(filterList), "overridden", overrideCount)
 	return result
 }
 
-// matchesAnyTagFilter checks if a filter matches any of the tag filters.
-func matchesAnyTagFilter(filter config.Filter, tagFilters []config.TagFilter) bool {
-	if len(tagFilters) == 0 {
-		return true
+// getMatchingTagFilterWithPolicy checks if a filter matches any of the tag filters
+// and returns the matching tag filter with the highest priority (last in list).
+// Returns (matchingFilter, true) if matched, (nil, false) if not matched.
+func getMatchingTagFilterWithPolicy(filter config.Filter, tagFilters []config.TagFilter) (*config.TagFilter, bool) {
+	// If no tags on filter, it doesn't match any tag filter (keeps original policy)
+	if len(filter.Tags) == 0 {
+		return nil, false
 	}
 
-	// If no tags on filter, exclude it (only include tagged entries)
-	if len(filter.Tags) == 0 {
-		return false
-	}
+	// Track all matching tag filters (later ones have higher priority)
+	var lastMatchingFilter *config.TagFilter
 
 	// Check if filter has any of the requested tags with matching values
-	for _, tagFilter := range tagFilters {
+	for i := range tagFilters {
+		tagFilter := &tagFilters[i]
 		for _, filterTag := range filter.Tags {
 			if filterTag.Name == tagFilter.Name {
 				// Check if any value matches
 				for _, filterValue := range filterTag.Values {
 					for _, allowedValue := range tagFilter.Values {
 						if filterValue == allowedValue {
-							return true
+							// This tag filter matches, remember it
+							lastMatchingFilter = tagFilter
+							goto nextTagFilter
 						}
 					}
 				}
 			}
 		}
+	nextTagFilter:
 	}
 
-	return false
+	if lastMatchingFilter != nil {
+		return lastMatchingFilter, true
+	}
+	return nil, false
 }
 
 func (a *actuator) collectSeedLoadBalancersIPs(ctx context.Context, namespaces []string) ([]net.IP, error) {

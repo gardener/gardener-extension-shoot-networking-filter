@@ -168,11 +168,15 @@ The extension supports two filter list formats:
 ]
 ```
 
-When using the tag-based format, you can configure tag filters to selectively apply only entries matching specific tag criteria. This is useful when a centrally-managed filter list contains entries for multiple environments or severity levels, and you want to apply only a subset.
+When using the tag-based format, you can configure tag filters to override policies for entries matching specific tag criteria. This is useful when a centrally-managed filter list contains entries for multiple environments or severity levels, and you want to change the policy for specific subsets.
 
-**Important:** Tag filtering uses **OR logic** - an entry is included if it matches **ANY** of the configured tag filters. Within a tag filter, multiple values are also ORed together.
+**Important:** Tag filters use **OR logic** for matching - an entry matches a tag filter if it has **ANY** of the specified tag values. **All entries are always included** in the result; tag filters only override the policies of matching entries.
 
-Tag filters are configured in the shoot specification under `egressFilter.tagFilters`:
+Tag filters can be configured at both the **service level** (in the ControllerDeployment) and the **shoot level** (in the shoot specification). Shoot-level tag filters are **merged** with service-level filters, allowing shoot owners to add additional filtering criteria on top of the baseline filters defined by administrators.
+
+### Tag Filtering with Policy Override
+
+You can specify a `policy` field in tag filters to override the policy of matching entries. **If no policy is specified**, matching entries keep their original policies. This enables sophisticated filtering logic where you can apply different policies based on tag combinations:
 
 ```yaml
 apiVersion: core.gardener.cloud/v1beta1
@@ -188,9 +192,39 @@ spec:
             values:
             - "Apple"
             - "Banana"
+            policy: BLOCK_ACCESS
+          - name: Color
+            values:
+            - "Green"
+            policy: ALLOW_ACCESS
 ```
 
-In this example, only entries tagged with `Fruit=Apple` **OR** `Fruit=Banana` will be applied.
+**How it works:**
+1. **All entries are always included** in the result
+2. Entries are evaluated against all tag filters
+3. Matching entries have their policy overridden **only if** the tag filter specifies a `policy`
+4. If multiple filters match with different policies, **priority order** determines the policy (filters listed later take precedence)
+5. In the example above, entries tagged with `Fruit=Apple` or `Fruit=Banana` are blocked, **except** if they also have `Color=Green`, they are allowed (Color filter takes precedence)
+
+**Example scenario:**
+
+Given a filter list with these entries:
+```json
+[
+  {
+    "entries": [
+      {"target": "10.0.0.1/32", "policy": "BLOCK", "tags": [{"name": "Fruit", "values": ["Apple"]}]},
+      {"target": "10.0.0.2/32", "policy": "BLOCK", "tags": [{"name": "Fruit", "values": ["Banana"]}]},
+      {"target": "10.0.0.3/32", "policy": "BLOCK", "tags": [{"name": "Fruit", "values": ["Apple"]}, {"name": "Color", "values": ["Green"]}]}
+    ]
+  }
+]
+```
+
+With the tag filters shown above:
+- `10.0.0.1` (Apple): **BLOCKED** - matches first filter (policy overridden to BLOCK_ACCESS)
+- `10.0.0.2` (Banana): **BLOCKED** - matches first filter (policy overridden to BLOCK_ACCESS)
+- `10.0.0.3` (Apple + Green): **ALLOWED** - matches both filters, but Color filter (listed later) takes precedence with ALLOW_ACCESS
 
 The extension can read filter entries from a Secret that Gardener automatically syncs from the garden cluster to the seed cluster. This is useful when you have a large project-specific list of policies.
 

@@ -292,6 +292,7 @@ func Convert_config_Tag_To_v1alpha1_Tag(in *config.Tag, out *Tag, s conversion.S
 func autoConvert_v1alpha1_TagFilter_To_config_TagFilter(in *TagFilter, out *config.TagFilter, s conversion.Scope) error {
 	out.Name = in.Name
 	out.Values = *(*[]string)(unsafe.Pointer(&in.Values))
+	out.Policy = (*config.Policy)(unsafe.Pointer(in.Policy))
 	return nil
 }
 
@@ -303,6 +304,7 @@ func Convert_v1alpha1_TagFilter_To_config_TagFilter(in *TagFilter, out *config.T
 func autoConvert_config_TagFilter_To_v1alpha1_TagFilter(in *config.TagFilter, out *TagFilter, s conversion.Scope) error {
 	out.Name = in.Name
 	out.Values = *(*[]string)(unsafe.Pointer(&in.Values))
+	out.Policy = (*Policy)(unsafe.Pointer(in.Policy))
 	return nil
 }
 

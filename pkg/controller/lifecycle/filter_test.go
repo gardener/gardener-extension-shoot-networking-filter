@@ -243,7 +243,7 @@ var _ = Describe("Filter methods", func() {
 	)
 
 	Describe("#filterByTags", func() {
-		It("should return all entries when no tag filters specified", func() {
+		It("should return all entries unchanged when no tag filters specified", func() {
 			filterList := []config.Filter{
 				{Network: "1.2.3.4/32", Policy: "BLOCK_ACCESS"},
 				{Network: "5.6.7.8/32", Policy: "BLOCK_ACCESS"},
@@ -252,144 +252,340 @@ var _ = Describe("Filter methods", func() {
 			Expect(result).To(Equal(filterList))
 		})
 
-		It("should filter entries by single tag value", func() {
+		It("should include all entries but only override matching ones", func() {
+			allowPolicy := config.PolicyAllowAccess
 			filterList := []config.Filter{
 				{
 					Network: "1.2.3.4/32",
-					Policy:  "BLOCK_ACCESS",
+					Policy:  config.PolicyBlockAccess,
 					Tags: []config.Tag{
-						{Name: "S", Values: []string{"1"}},
+						{Name: "Fruit", Values: []string{"Apple"}},
 					},
 				},
 				{
 					Network: "5.6.7.8/32",
-					Policy:  "BLOCK_ACCESS",
+					Policy:  config.PolicyBlockAccess,
 					Tags: []config.Tag{
-						{Name: "S", Values: []string{"2"}},
+						{Name: "Fruit", Values: []string{"Banana"}},
 					},
 				},
 				{
 					Network: "9.10.11.12/32",
-					Policy:  "BLOCK_ACCESS",
+					Policy:  config.PolicyBlockAccess,
 					Tags: []config.Tag{
-						{Name: "S", Values: []string{"3"}},
+						{Name: "Fruit", Values: []string{"Orange"}},
 					},
 				},
 			}
 			tagFilters := []config.TagFilter{
-				{Name: "S", Values: []string{"1"}},
+				{Name: "Fruit", Values: []string{"Banana"}, Policy: &allowPolicy},
 			}
 			result := filterByTags(filterList, tagFilters, logger)
-			Expect(len(result)).To(Equal(1))
-			Expect(result[0].Network).To(Equal("1.2.3.4/32"))
+			// All entries should be included
+			Expect(len(result)).To(Equal(3))
+			// Only Banana should have policy overridden to ALLOW_ACCESS
+			for _, entry := range result {
+				switch entry.Network {
+				case "5.6.7.8/32":
+					Expect(entry.Policy).To(Equal(config.PolicyAllowAccess))
+				case "1.2.3.4/32", "9.10.11.12/32":
+					Expect(entry.Policy).To(Equal(config.PolicyBlockAccess))
+				}
+			}
 		})
 
-		It("should filter entries by multiple tag values (OR)", func() {
+		It("should override policy for multiple matching tag values (OR)", func() {
+			allowPolicy := config.PolicyAllowAccess
 			filterList := []config.Filter{
 				{
 					Network: "1.2.3.4/32",
-					Policy:  "BLOCK_ACCESS",
+					Policy:  config.PolicyBlockAccess,
 					Tags: []config.Tag{
-						{Name: "S", Values: []string{"1"}},
+						{Name: "Fruit", Values: []string{"Apple"}},
 					},
 				},
 				{
 					Network: "5.6.7.8/32",
-					Policy:  "BLOCK_ACCESS",
+					Policy:  config.PolicyBlockAccess,
 					Tags: []config.Tag{
-						{Name: "S", Values: []string{"2"}},
+						{Name: "Fruit", Values: []string{"Banana"}},
 					},
 				},
 				{
 					Network: "9.10.11.12/32",
-					Policy:  "BLOCK_ACCESS",
+					Policy:  config.PolicyBlockAccess,
 					Tags: []config.Tag{
-						{Name: "S", Values: []string{"3"}},
+						{Name: "Fruit", Values: []string{"Orange"}},
 					},
 				},
 			}
 			tagFilters := []config.TagFilter{
-				{Name: "S", Values: []string{"1", "2"}},
+				{Name: "Fruit", Values: []string{"Apple", "Banana"}, Policy: &allowPolicy},
 			}
 			result := filterByTags(filterList, tagFilters, logger)
-			Expect(len(result)).To(Equal(2))
-			networks := []string{result[0].Network, result[1].Network}
-			Expect(networks).To(ConsistOf("1.2.3.4/32", "5.6.7.8/32"))
+			// All entries included
+			Expect(len(result)).To(Equal(3))
+			// Apple and Banana should be ALLOW_ACCESS, Orange should stay BLOCK_ACCESS
+			for _, entry := range result {
+				switch entry.Network {
+				case "1.2.3.4/32", "5.6.7.8/32":
+					Expect(entry.Policy).To(Equal(config.PolicyAllowAccess))
+				case "9.10.11.12/32":
+					Expect(entry.Policy).To(Equal(config.PolicyBlockAccess))
+				}
+			}
 		})
 
-		It("should exclude entries without tags when filters are specified", func() {
+		It("should include entries without tags unchanged when filters are specified", func() {
+			allowPolicy := config.PolicyAllowAccess
 			filterList := []config.Filter{
 				{
 					Network: "1.2.3.4/32",
-					Policy:  "BLOCK_ACCESS",
+					Policy:  config.PolicyBlockAccess,
 					Tags: []config.Tag{
-						{Name: "S", Values: []string{"1"}},
+						{Name: "Color", Values: []string{"Red"}},
 					},
 				},
 				{
 					Network: "5.6.7.8/32",
-					Policy:  "BLOCK_ACCESS",
+					Policy:  config.PolicyBlockAccess,
 					// No tags
 				},
 			}
 			tagFilters := []config.TagFilter{
-				{Name: "S", Values: []string{"1"}},
+				{Name: "Color", Values: []string{"Red"}, Policy: &allowPolicy},
 			}
 			result := filterByTags(filterList, tagFilters, logger)
-			Expect(len(result)).To(Equal(1))
-			Expect(result[0].Network).To(Equal("1.2.3.4/32"))
+			// All entries included
+			Expect(len(result)).To(Equal(2))
+			// Red gets overridden to ALLOW_ACCESS
+			for _, entry := range result {
+				switch entry.Network {
+				case "1.2.3.4/32":
+					Expect(entry.Policy).To(Equal(config.PolicyAllowAccess))
+				case "5.6.7.8/32":
+					// Untagged entry keeps original policy
+					Expect(entry.Policy).To(Equal(config.PolicyBlockAccess))
+				}
+			}
 		})
 
-		It("should handle entries with multiple tags", func() {
+		It("should handle entries with multiple tags and override matching ones", func() {
+			allowPolicy := config.PolicyAllowAccess
 			filterList := []config.Filter{
 				{
 					Network: "1.2.3.4/32",
-					Policy:  "BLOCK_ACCESS",
+					Policy:  config.PolicyBlockAccess,
 					Tags: []config.Tag{
-						{Name: "S", Values: []string{"1"}},
-						{Name: "Region", Values: []string{"EU"}},
+						{Name: "Fruit", Values: []string{"Apple"}},
+						{Name: "Size", Values: []string{"Large"}},
 					},
 				},
 				{
 					Network: "5.6.7.8/32",
-					Policy:  "BLOCK_ACCESS",
+					Policy:  config.PolicyBlockAccess,
 					Tags: []config.Tag{
-						{Name: "S", Values: []string{"2"}},
-						{Name: "Region", Values: []string{"US"}},
+						{Name: "Fruit", Values: []string{"Banana"}},
+						{Name: "Size", Values: []string{"Small"}},
 					},
 				},
 			}
 			tagFilters := []config.TagFilter{
-				{Name: "Region", Values: []string{"EU"}},
+				{Name: "Size", Values: []string{"Large"}, Policy: &allowPolicy},
 			}
 			result := filterByTags(filterList, tagFilters, logger)
-			Expect(len(result)).To(Equal(1))
-			Expect(result[0].Network).To(Equal("1.2.3.4/32"))
+			// All entries included
+			Expect(len(result)).To(Equal(2))
+			// Large entry gets overridden to ALLOW_ACCESS
+			for _, entry := range result {
+				switch entry.Network {
+				case "1.2.3.4/32":
+					Expect(entry.Policy).To(Equal(config.PolicyAllowAccess))
+				case "5.6.7.8/32":
+					Expect(entry.Policy).To(Equal(config.PolicyBlockAccess))
+				}
+			}
 		})
 
-		It("should handle tag with multiple values in entry", func() {
+		It("should handle tag with multiple values in entry and override when matched", func() {
+			allowPolicy := config.PolicyAllowAccess
 			filterList := []config.Filter{
 				{
 					Network: "1.2.3.4/32",
-					Policy:  "BLOCK_ACCESS",
+					Policy:  config.PolicyBlockAccess,
 					Tags: []config.Tag{
-						{Name: "S", Values: []string{"1", "10"}},
+						{Name: "Color", Values: []string{"Red", "Green"}},
 					},
 				},
 				{
 					Network: "5.6.7.8/32",
-					Policy:  "BLOCK_ACCESS",
+					Policy:  config.PolicyBlockAccess,
 					Tags: []config.Tag{
-						{Name: "S", Values: []string{"2"}},
+						{Name: "Color", Values: []string{"Blue"}},
 					},
 				},
 			}
 			tagFilters := []config.TagFilter{
-				{Name: "S", Values: []string{"1"}},
+				{Name: "Color", Values: []string{"Red"}, Policy: &allowPolicy},
 			}
 			result := filterByTags(filterList, tagFilters, logger)
-			Expect(len(result)).To(Equal(1))
-			Expect(result[0].Network).To(Equal("1.2.3.4/32"))
+			// All entries included
+			Expect(len(result)).To(Equal(2))
+			// Red/Green entry gets overridden to ALLOW_ACCESS
+			for _, entry := range result {
+				switch entry.Network {
+				case "1.2.3.4/32":
+					Expect(entry.Policy).To(Equal(config.PolicyAllowAccess))
+				case "5.6.7.8/32":
+					Expect(entry.Policy).To(Equal(config.PolicyBlockAccess))
+				}
+			}
+		})
+
+		It("should override policy when specified in tag filter", func() {
+			allowPolicy := config.PolicyAllowAccess
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  config.PolicyBlockAccess,
+					Tags: []config.Tag{
+						{Name: "Fruit", Values: []string{"Apple"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  config.PolicyBlockAccess,
+					Tags: []config.Tag{
+						{Name: "Fruit", Values: []string{"Banana"}},
+					},
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "Fruit", Values: []string{"Apple"}, Policy: &allowPolicy},
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			// All entries included
+			Expect(len(result)).To(Equal(2))
+			// Apple gets overridden, Banana keeps original
+			for _, entry := range result {
+				switch entry.Network {
+				case "1.2.3.4/32":
+					Expect(entry.Policy).To(Equal(config.PolicyAllowAccess))
+				case "5.6.7.8/32":
+					Expect(entry.Policy).To(Equal(config.PolicyBlockAccess))
+				}
+			}
+		})
+
+		It("should use last matching tag filter's policy (priority order)", func() {
+			blockPolicy := config.PolicyBlockAccess
+			allowPolicy := config.PolicyAllowAccess
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  config.PolicyBlockAccess,
+					Tags: []config.Tag{
+						{Name: "Fruit", Values: []string{"Apple"}},
+						{Name: "Color", Values: []string{"Green"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  config.PolicyBlockAccess,
+					Tags: []config.Tag{
+						{Name: "Fruit", Values: []string{"Banana"}},
+					},
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "Fruit", Values: []string{"Apple", "Banana"}, Policy: &blockPolicy},
+				{Name: "Color", Values: []string{"Green"}, Policy: &allowPolicy},
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			// All entries included
+			Expect(len(result)).To(Equal(2))
+			// Apple matches both filters, Color filter (later) takes precedence -> ALLOW_ACCESS
+			// Banana only matches first filter -> BLOCK_ACCESS
+			for _, entry := range result {
+				switch entry.Network {
+				case "1.2.3.4/32":
+					// Color filter is listed later, so it should take precedence
+					Expect(entry.Policy).To(Equal(config.PolicyAllowAccess))
+				case "5.6.7.8/32":
+					Expect(entry.Policy).To(Equal(config.PolicyBlockAccess))
+				}
+			}
+		})
+
+		It("should keep original policy when no policy override specified", func() {
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  config.PolicyBlockAccess,
+					Tags: []config.Tag{
+						{Name: "Fruit", Values: []string{"Apple"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  config.PolicyAllowAccess,
+					Tags: []config.Tag{
+						{Name: "Fruit", Values: []string{"Banana"}},
+					},
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "Fruit", Values: []string{"Apple", "Banana"}}, // No policy specified
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			// All entries included
+			Expect(len(result)).To(Equal(2))
+			// Both should keep their original policies
+			for _, entry := range result {
+				switch entry.Network {
+				case "1.2.3.4/32":
+					Expect(entry.Policy).To(Equal(config.PolicyBlockAccess))
+				case "5.6.7.8/32":
+					Expect(entry.Policy).To(Equal(config.PolicyAllowAccess))
+				}
+			}
+		})
+
+		It("should handle mixed policy overrides and non-overrides", func() {
+			blockPolicy := config.PolicyBlockAccess
+			filterList := []config.Filter{
+				{
+					Network: "1.2.3.4/32",
+					Policy:  config.PolicyAllowAccess,
+					Tags: []config.Tag{
+						{Name: "Fruit", Values: []string{"Apple"}},
+					},
+				},
+				{
+					Network: "5.6.7.8/32",
+					Policy:  config.PolicyAllowAccess,
+					Tags: []config.Tag{
+						{Name: "Fruit", Values: []string{"Banana"}},
+					},
+				},
+			}
+			tagFilters := []config.TagFilter{
+				{Name: "Fruit", Values: []string{"Apple"}, Policy: &blockPolicy},
+				{Name: "Fruit", Values: []string{"Banana"}}, // No policy - keeps original
+			}
+			result := filterByTags(filterList, tagFilters, logger)
+			// All entries included
+			Expect(len(result)).To(Equal(2))
+			// Apple gets overridden to BLOCK, Banana keeps original ALLOW
+			for _, entry := range result {
+				switch entry.Network {
+				case "1.2.3.4/32":
+					Expect(entry.Policy).To(Equal(config.PolicyBlockAccess))
+				case "5.6.7.8/32":
+					// Keeps original ALLOW_ACCESS policy
+					Expect(entry.Policy).To(Equal(config.PolicyAllowAccess))
+				}
+			}
 		})
 	})
 
