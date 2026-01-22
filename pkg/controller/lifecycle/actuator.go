@@ -409,7 +409,7 @@ func filterByTags(filterList []config.Filter, tagFilters []config.TagFilter, log
 
 	for i, filter := range filterList {
 		result[i] = filter
-		if matchingFilter, matches := getMatchingTagFilterWithPolicy(filter, tagFilters); matches && matchingFilter != nil && matchingFilter.Policy != nil {
+		if matchingFilter := getMatchingTagFilterWithPolicy(filter, tagFilters); matchingFilter != nil && matchingFilter.Policy != nil {
 			// Override policy if tag filter specifies one
 			result[i].Policy = *matchingFilter.Policy
 			overrideCount++
@@ -423,40 +423,42 @@ func filterByTags(filterList []config.Filter, tagFilters []config.TagFilter, log
 
 // getMatchingTagFilterWithPolicy checks if a filter matches any of the tag filters
 // and returns the matching tag filter with the highest priority (last in list).
-// Returns (matchingFilter, true) if matched, (nil, false) if not matched.
-func getMatchingTagFilterWithPolicy(filter config.Filter, tagFilters []config.TagFilter) (*config.TagFilter, bool) {
+// Returns the matching filter if found, nil otherwise.
+func getMatchingTagFilterWithPolicy(filter config.Filter, tagFilters []config.TagFilter) *config.TagFilter {
 	// If no tags on filter, it doesn't match any tag filter (keeps original policy)
 	if len(filter.Tags) == 0 {
-		return nil, false
+		return nil
 	}
 
 	// Track all matching tag filters (later ones have higher priority)
 	var lastMatchingFilter *config.TagFilter
 
-	// Check if filter has any of the requested tags with matching values
+	// Check each tag filter for a match
 	for i := range tagFilters {
-		tagFilter := &tagFilters[i]
-		for _, filterTag := range filter.Tags {
-			if filterTag.Name == tagFilter.Name {
-				// Check if any value matches
-				for _, filterValue := range filterTag.Values {
-					for _, allowedValue := range tagFilter.Values {
-						if filterValue == allowedValue {
-							// This tag filter matches, remember it
-							lastMatchingFilter = tagFilter
-							goto nextTagFilter
-						}
+		if tagFilterMatches(filter, &tagFilters[i]) {
+			lastMatchingFilter = &tagFilters[i]
+		}
+	}
+
+	return lastMatchingFilter
+}
+
+// tagFilterMatches checks if a filter matches a specific tag filter.
+// Returns true if the filter has the tag with any of the specified values.
+func tagFilterMatches(filter config.Filter, tagFilter *config.TagFilter) bool {
+	for _, filterTag := range filter.Tags {
+		if filterTag.Name == tagFilter.Name {
+			// Check if any value matches
+			for _, filterValue := range filterTag.Values {
+				for _, allowedValue := range tagFilter.Values {
+					if filterValue == allowedValue {
+						return true
 					}
 				}
 			}
 		}
-	nextTagFilter:
 	}
-
-	if lastMatchingFilter != nil {
-		return lastMatchingFilter, true
-	}
-	return nil, false
+	return false
 }
 
 func (a *actuator) collectSeedLoadBalancersIPs(ctx context.Context, namespaces []string) ([]net.IP, error) {
