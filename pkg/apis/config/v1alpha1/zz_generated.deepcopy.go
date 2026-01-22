@@ -220,6 +220,11 @@ func (in *TagFilter) DeepCopyInto(out *TagFilter) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.Policy != nil {
+		in, out := &in.Policy, &out.Policy
+		*out = new(Policy)
+		**out = **in
+	}
 	return
 }
 

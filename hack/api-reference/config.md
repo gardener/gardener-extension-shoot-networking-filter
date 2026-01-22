@@ -375,7 +375,8 @@ Policy
 (<code>string</code> alias)</p></h3>
 <p>
 (<em>Appears on:</em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Filter">Filter</a>)
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Filter">Filter</a>, 
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.TagFilter">TagFilter</a>)
 </p>
 <p>
 <p>Policy is the access policy</p>
@@ -502,6 +503,22 @@ string
 <td>
 <p>Values is the list of allowed tag values.
 An entry matches if it has this tag with any of these values.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>policy</code></br>
+<em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Policy">
+Policy
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Policy is an optional access policy to override for matching entries.
+If specified, matching entries will have their policy changed to this value.
+If omitted, entries keep their original policy from the source filter list.</p>
 </td>
 </tr>
 </tbody>

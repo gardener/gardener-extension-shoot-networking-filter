@@ -73,6 +73,10 @@ type TagFilter struct {
 	// Values is the list of allowed tag values.
 	// An entry matches if it has this tag with any of these values.
 	Values []string
+	// Policy is an optional access policy to override for matching entries.
+	// If specified, matching entries will have their policy changed to this value.
+	// If omitted, entries keep their original policy from the source filter list.
+	Policy *Policy
 }
 
 type FilterListProviderType string
