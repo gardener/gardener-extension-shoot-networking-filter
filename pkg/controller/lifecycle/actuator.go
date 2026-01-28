@@ -578,7 +578,7 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 			Labels:    labels,
 		},
 		Spec: appsv1.DaemonSetSpec{
-			RevisionHistoryLimit: ptr.To(int32(5)),
+			RevisionHistoryLimit: ptr.To(int32(2)),
 			Selector:             &metav1.LabelSelector{MatchLabels: labels},
 			UpdateStrategy: appsv1.DaemonSetUpdateStrategy{
 				Type: appsv1.RollingUpdateDaemonSetStrategyType,
