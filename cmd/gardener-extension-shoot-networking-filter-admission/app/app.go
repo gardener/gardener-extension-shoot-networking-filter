@@ -59,6 +59,7 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			Name,
 			"",
 			nil,
+			nil,
 			webhookServerOptions,
 			webhookSwitches,
 		)
@@ -151,7 +152,7 @@ func NewControllerManagerCommand(ctx context.Context) *cobra.Command {
 			}
 
 			log.Info("Setting up webhook server")
-			if _, err := webhookOptions.Completed().AddToManager(ctx, mgr, sourceCluster, false); err != nil {
+			if _, err := webhookOptions.Completed().AddToManager(ctx, mgr, sourceCluster); err != nil {
 				return err
 			}
 

@@ -89,7 +89,7 @@ func (o *Options) run(ctx context.Context) error {
 	ctrlConfig.Apply(&lifecycle.DefaultAddOptions.ServiceConfig)
 	o.controllerOptions.Completed().Apply(&lifecycle.DefaultAddOptions.ControllerOptions)
 	o.lifecycleOptions.Completed().Apply(&lifecycle.DefaultAddOptions.ControllerOptions)
-	o.reconcileOptions.Completed().Apply(&lifecycle.DefaultAddOptions.IgnoreOperationAnnotation, &lifecycle.DefaultAddOptions.ExtensionClass)
+	o.reconcileOptions.Completed().Apply(&lifecycle.DefaultAddOptions.IgnoreOperationAnnotation, &lifecycle.DefaultAddOptions.ExtensionClasses)
 	o.healthOptions.Completed().Apply(&healthcheck.DefaultAddOptions.Controller)
 	o.heartbeatOptions.Completed().Apply(&heartbeat.DefaultAddOptions)
 
