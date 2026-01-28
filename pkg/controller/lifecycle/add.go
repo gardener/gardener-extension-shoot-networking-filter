@@ -6,6 +6,7 @@ package lifecycle
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
@@ -37,14 +38,14 @@ type AddOptions struct {
 	ServiceConfig controllerconfig.Config
 	// IgnoreOperationAnnotation specifies whether to ignore the operation annotation or not.
 	IgnoreOperationAnnotation bool
-	// ExtensionClass defines the main extension class this extension is responsible for.
-	ExtensionClass extensionsv1alpha1.ExtensionClass
+	// ExtensionClasses define the extension classes this extension is responsible for.
+	ExtensionClasses []extensionsv1alpha1.ExtensionClass
 }
 
 // AddToManager adds a Networking Policy Filter Lifecycle controller to the given Controller Manager.
 func AddToManager(ctx context.Context, mgr manager.Manager) error {
 	extensionClasses := []extensionsv1alpha1.ExtensionClass{extensionsv1alpha1.ExtensionClassShoot, extensionsv1alpha1.ExtensionClassSeed}
-	if DefaultAddOptions.ExtensionClass == extensionsv1alpha1.ExtensionClassGarden {
+	if slices.Contains(DefaultAddOptions.ExtensionClasses, extensionsv1alpha1.ExtensionClassGarden) {
 		extensionClasses = []extensionsv1alpha1.ExtensionClass{extensionsv1alpha1.ExtensionClassGarden}
 	}
 
