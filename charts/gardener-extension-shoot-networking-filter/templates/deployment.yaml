@@ -87,7 +87,7 @@ spec:
         - --leader-election-id={{ include "leaderelectionid" . }}
         - --gardener-version={{ .Values.gardener.version }}
         {{- if .Values.gardener.runtimeCluster.enabled }}
-        - --extension-class=garden
+        - --extension-classes=garden
         - --controllers=shoot_networking_filter_lifecycle_controller
         {{- end }}
         securityContext:
