@@ -35,13 +35,13 @@ var _ = Describe("Worker Group Specific Tests", Label("Network"), func() {
 
 		setupShootClient(ctx, f)
 
-		By("Add worker group 'blackholed'")
+		By("Add worker group 'bh'")
 		err := f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
 			w := gardencorev1beta1.Worker{
 				CRI: &gardencorev1beta1.CRI{
 					Name: gardencorev1beta1.CRINameContainerD,
 				},
-				Name: "blackholed",
+				Name: "bh",
 				Machine: gardencorev1beta1.Machine{
 					Type: "local",
 				},
@@ -65,7 +65,7 @@ var _ = Describe("Worker Group Specific Tests", Label("Network"), func() {
 		Expect(found).To(Equal(1))
 
 		By("Enable per-worker-group blocking")
-		groups := []string{"blackholed"}
+		groups := []string{"bh"}
 		updatedShoot := workerSpecificShoot("e2e-worker-group", false, blockAddress, true, groups)
 		err = f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
 			shoot.Spec.Extensions = updatedShoot.Spec.Extensions
@@ -86,7 +86,7 @@ var _ = Describe("Worker Group Specific Tests", Label("Network"), func() {
 
 		By("Verify that one daemon set uses blackholing and one does not")
 		for _, ds := range filterDS {
-			if ds.Spec.Template.Spec.NodeSelector[constants.LabelWorkerPool] == "blackholed" {
+			if ds.Spec.Template.Spec.NodeSelector[constants.LabelWorkerPool] == "bh" {
 				Expect(ds.Spec.Template.Spec.Containers[0].Args).To(ContainElement("-blackholing=true"))
 			} else {
 				Expect(ds.Spec.Template.Spec.Containers[0].Args).To(ContainElement("-blackholing=false"))
