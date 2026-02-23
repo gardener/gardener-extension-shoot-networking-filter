@@ -554,7 +554,6 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 	var (
 		requestCPU, _          = resource.ParseQuantity("5m")
 		requestMemory, _       = resource.ParseQuantity("20Mi")
-		limitMemory, _         = resource.ParseQuantity("256Mi")
 		defaultMode      int32 = 0400
 		zero             int64 = 0
 		hostPathType           = corev1.HostPathFileOrCreate
@@ -640,9 +639,6 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    requestCPU,
 								corev1.ResourceMemory: requestMemory,
-							},
-							Limits: corev1.ResourceList{
-								corev1.ResourceMemory: limitMemory,
 							},
 						},
 						SecurityContext: &corev1.SecurityContext{
