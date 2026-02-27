@@ -154,7 +154,7 @@ type OAuth2Secret struct {
 	// ClientID is the OAuth2 client id.
 	ClientID string
 	// ClientSecret is the optional OAuth2 client secret.
-	ClientSecret string
+	ClientSecret string // #nosec: G117 -- OAuth2 client secret used internally
 	// ClientCert is the optional client certificate.
 	ClientCert []byte
 	// ClientCertKey is the optional private key of the client certificate.
