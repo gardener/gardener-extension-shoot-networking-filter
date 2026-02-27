@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
 	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -94,21 +93,21 @@ func createShoot(generateName string, blackholing bool, blockAddress string, use
 		},
 		Spec: gardencorev1beta1.ShootSpec{
 			Region:            "local",
-			SecretBindingName: ptr.To("local"),
-			CloudProfileName:  ptr.To("local"),
+			SecretBindingName: new("local"),
+			CloudProfileName:  new("local"),
 			Kubernetes: gardencorev1beta1.Kubernetes{
 				Version: "1.30.0",
 				Kubelet: &gardencorev1beta1.KubeletConfig{
-					SerializeImagePulls: ptr.To(false),
-					RegistryPullQPS:     ptr.To(int32(10)),
-					RegistryBurst:       ptr.To(int32(20)),
+					SerializeImagePulls: new(false),
+					RegistryPullQPS:     new(int32(10)),
+					RegistryBurst:       new(int32(20)),
 				},
 			},
 			Networking: &gardencorev1beta1.Networking{
-				Type:           ptr.To("calico"),
-				Pods:           ptr.To("10.3.0.0/16"),
-				Services:       ptr.To("10.4.0.0/16"),
-				Nodes:          ptr.To("10.0.0.0/16"),
+				Type:           new("calico"),
+				Pods:           new("10.3.0.0/16"),
+				Services:       new("10.4.0.0/16"),
+				Nodes:          new("10.0.0.0/16"),
 				ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"calico.networking.extensions.gardener.cloud/v1alpha1","kind":"NetworkConfig","typha":{"enabled":true},"backend":"none"}`)},
 			},
 			Extensions: []gardencorev1beta1.Extension{

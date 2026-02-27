@@ -44,7 +44,7 @@ func init() {
 // Returns the parsed filter list in v1 format.
 func parseFilterList(data []byte) ([]config.Filter, error) {
 	// Detect format by checking structure
-	var raw []map[string]interface{}
+	var raw []map[string]any
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON structure: %w", err)
 	}
@@ -155,7 +155,7 @@ func ipNetListfromPlainYamlList(yaml string) []net.IPNet {
 		return nil
 	}
 	var result []net.IPNet
-	for _, s := range strings.Split(yaml, "\n") {
+	for s := range strings.SplitSeq(yaml, "\n") {
 		s = strings.Trim(s, "- ")
 		_, ipnet, err := net.ParseCIDR(s)
 		if err != nil || ipnet == nil {
