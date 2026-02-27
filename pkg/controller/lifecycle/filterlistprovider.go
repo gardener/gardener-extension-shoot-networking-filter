@@ -183,7 +183,11 @@ func (p *DownloaderFilterListProvider) download() ([]config.Filter, error) {
 		}
 		req.Header.Add("Authorization", "Bearer "+token)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	cl := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	resp, err := cl.Do(req) // #nosec G704 -- downloaderConfig is only supported in seed configuration
 	if err != nil {
 		return nil, err
 	}
