@@ -273,6 +273,21 @@ SecretRef
 The Secret must be listed in Shoot.spec.resources for Gardener to sync it automatically.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>shootFilterListSource</code></br>
+<em>
+<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.SecretRef">
+SecretRef
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ShootFilterListSource references a Secret in the shoot cluster containing additional filter entries.
+Mutually exclusive with ProjectFilterListSource.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EnsureConnectivity">EnsureConnectivity
@@ -388,7 +403,9 @@ Policy
 <a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
 </p>
 <p>
-<p>SecretRef references a Secret synced by Gardener.</p>
+<p>SecretRef references a Secret containing filter list data.
+- For ProjectFilterListSource: Secret in seed cluster (synced by Gardener from Shoot.spec.resources)
+- For ShootFilterListSource: Secret directly in the shoot cluster (not synced)</p>
 </p>
 <table>
 <thead>
@@ -406,7 +423,7 @@ string
 </em>
 </td>
 <td>
-<p>Name is the name of the Secret (must match Shoot.spec.resources entry).</p>
+<p>Name is the name of the Secret.</p>
 </td>
 </tr>
 <tr>
@@ -418,8 +435,20 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>Key is the data key containing the filter list in JSON format.
-If omitted, defaults to &ldquo;filterList&rdquo;.</p>
+<p>Key is the data key containing the filter list in JSON format.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>namespace</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Namespace is the namespace of the Secret in the shoot cluster.
+Only used for ShootFilterListSource.</p>
 </td>
 </tr>
 </tbody>

@@ -226,6 +226,17 @@ With the tag filters shown above:
 - `10.0.0.2` (Banana): **BLOCKED** - matches first filter (policy overridden to BLOCK_ACCESS)
 - `10.0.0.3` (Apple + Green): **ALLOWED** - matches both filters, but Color filter (listed later) takes precedence with ALLOW_ACCESS
 
+## Filter List from Secrets
+
+The extension supports reading filter lists from secrets in two ways:
+
+1. **Project Secrets (Garden Cluster)** - Secrets synced by Gardener from the garden cluster
+2. **Shoot Secrets (Shoot Cluster)** - Secrets stored directly in the shoot cluster
+
+Both approaches support the same filter list formats (v1 and v2) and gzip compression.
+
+### Option 1: Project Secrets (Synced from Garden Cluster)
+
 The extension can read filter entries from a Secret that Gardener automatically syncs from the garden cluster to the seed cluster. This is useful when you have a large project-specific list of policies.
 
 **Important:** The project Secret filters **replace** (not append to) the centrally downloaded filter list. This allows you to completely override the default filters while still being able to add shoot-specific static filters. See [Merge Behavior](#merge-behavior) below for details.
@@ -389,25 +400,148 @@ The ConfigMap/Secret data can contain:
 ]
 ```
 
+### Option 2: Shoot Secrets (Direct from Shoot Cluster)
+
+The extension can also read filter lists directly from secrets stored in the shoot cluster itself. 
+
+**Important:** `shootFilterListSource` and `projectFilterListSource` are **mutually exclusive** - you can only use one at a time.
+
+#### 1. Create Secret in Shoot Cluster
+
+Create a Secret in the shoot cluster. You can use either the basic format (v1) or tag-based format (v2):
+
+**Example using basic format (v1):**
+```bash
+kubectl create secret generic my-filter-list \
+  --namespace=my-namespace \
+  --from-literal=filterList='[
+    {"network": "10.250.0.0/16", "policy": "BLOCK_ACCESS"},
+    {"network": "172.31.0.0/16", "policy": "BLOCK_ACCESS"}
+  ]'
+```
+
+Or using YAML:
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-filter-list
+  namespace: my-namespace  # Can be any namespace
+type: Opaque
+stringData:
+  filterList: |
+    [
+      {"network": "10.250.0.0/16", "policy": "BLOCK_ACCESS"},
+      {"network": "172.31.0.0/16", "policy": "BLOCK_ACCESS"}
+    ]
+```
+
+**Example using tag-based format (v2):**
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-filter-list
+  namespace: my-namespace
+type: Opaque
+stringData:
+  filterList: |
+    [
+      {
+        "entries": [
+          {"target": "10.250.0.0/16", "policy": "BLOCK", "tags": [{"name": "Fruit", "values": ["Apple"]}]},
+          {"target": "172.31.0.0/16", "policy": "BLOCK", "tags": [{"name": "Fruit", "values": ["Banana"]}]}
+        ]
+      }
+    ]
+```
+
+**For large filter lists**, you can use gzip compression (same as project secrets):
+
+```bash
+# Create and compress filter list
+cat > filterlist.json <<EOF
+[
+  {"network": "10.250.0.0/16", "policy": "BLOCK_ACCESS"},
+  {"network": "172.31.0.0/16", "policy": "BLOCK_ACCESS"}
+]
+EOF
+gzip -c filterlist.json > filterlist.json.gz
+
+# Create secret with compressed data
+kubectl create secret generic my-filter-list \
+  --from-file=filterList=filterlist.json.gz \
+  --namespace=my-namespace
+```
+
+#### 2. Configure Shoot Extension
+
+Reference the shoot secret in your shoot configuration:
+
+```yaml
+apiVersion: core.gardener.cloud/v1beta1
+kind: Shoot
+metadata:
+  name: my-shoot
+  namespace: garden-myproject
+spec:
+  extensions:
+  - type: shoot-networking-filter
+    providerConfig:
+      apiVersion: shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1
+      kind: Configuration
+      egressFilter:
+        blackholingEnabled: true
+        # Reference the secret in the shoot cluster
+        shootFilterListSource:
+          name: my-filter-list
+          namespace: my-namespace
+          key: filterList         # optional, defaults to "filterList"
+        # You can also add static filters
+        staticFilterList:
+        - network: "198.51.100.0/24"
+          policy: "BLOCK_ACCESS"
+        # And tag filters for v2 format lists
+        tagFilters:
+        - name: Fruit
+          values:
+          - "Apple"
+          policy: BLOCK_ACCESS
+```
+
+
 ### Merge Behavior
 
-The extension supports two filter sources that are mutually exclusive:
+The extension supports three filter sources with the following priority:
 
-**When Project Secret is configured:**
+**Filter Source Priority:**
+1. **Shoot Secret filters** (if `shootFilterListSource` is configured) - highest priority
+2. **Project Secret filters** (if `projectFilterListSource` is configured) - fallback if shoot source fails
+3. **Downloaded filter list** (from service config) - final fallback
+4. **Static filters** (from shoot providerConfig) - always merged with the selected source
+
+**Key Points:**
+- `shootFilterListSource` and `projectFilterListSource` are **mutually exclusive** (validation enforces this)
+- Shoot Secret and Project Secret filters **replace** (not append to) the downloaded filter list
+- Static filters are always merged regardless of the source
+- Tag filtering is applied to whichever source is active (shoot, project, or downloaded)
+- If reading the shoot/project Secret fails, the extension falls back to the next source
+
+**When Shoot Secret is configured:**
+1. Try to read **Shoot Secret filters** from shoot cluster
+2. If that fails, fall back to **Project Secret** (if configured) or **downloaded data**
+3. Tag filtering (if configured) - applied to active source
+4. Static filter list (from shoot providerConfig) - merged with active source
+
+**When only Project Secret is configured:**
 1. **Project Secret filters** (replaces downloaded data)
 2. Tag filtering (if configured) - applied to project filters
 3. Static filter list (from shoot providerConfig) - merged with project filters
 
-**When no Project Secret is configured:**
+**When neither Shoot nor Project Secret is configured:**
 1. Downloaded filter list (from service config)
 2. Tag filtering (if configured) - applied to downloaded filters
 3. Static filter list (from shoot providerConfig) - merged with downloaded filters
-
-**Key Points:**
-- Project Secret filters **replace** (not append to) the downloaded filter list
-- Static filters are always merged regardless of the source
-- Tag filtering is applied to whichever source is active (project or downloaded)
-- If reading the project Secret fails, the extension falls back to downloaded data
 
 **Examples:**
 
