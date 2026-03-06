@@ -55,15 +55,23 @@ type EgressFilter struct {
 	// ProjectFilterListSource references a Secret containing additional filter entries.
 	// The Secret must be listed in Shoot.spec.resources for Gardener to sync it automatically.
 	ProjectFilterListSource *SecretRef
+
+	// ShootFilterListSource references a Secret in the shoot cluster containing additional filter entries.
+	// Mutually exclusive with ProjectFilterListSource.
+	ShootFilterListSource *SecretRef
 }
 
-// SecretRef references a Secret synced by Gardener.
+// SecretRef references a Secret containing filter list data.
+// - For ProjectFilterListSource: Secret in seed cluster (synced by Gardener from Shoot.spec.resources)
+// - For ShootFilterListSource: Secret directly in the shoot cluster (not synced)
 type SecretRef struct {
-	// Name is the name of the Secret (must match Shoot.spec.resources entry).
+	// Name is the name of the Secret.
 	Name string
 	// Key is the data key containing the filter list in JSON format.
-	// If omitted, defaults to "filterList".
 	Key string
+	// Namespace is the namespace of the Secret in the shoot cluster.
+	// Only used for ShootFilterListSource.
+	Namespace string
 }
 
 // TagFilter specifies a tag-based filter criterion.
