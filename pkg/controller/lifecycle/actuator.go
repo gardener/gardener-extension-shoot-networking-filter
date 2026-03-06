@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"slices"
 	"strconv"
 	"time"
 
@@ -35,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -450,10 +450,8 @@ func tagFilterMatches(filter config.Filter, tagFilter *config.TagFilter) bool {
 		if filterTag.Name == tagFilter.Name {
 			// Check if any value matches
 			for _, filterValue := range filterTag.Values {
-				for _, allowedValue := range tagFilter.Values {
-					if filterValue == allowedValue {
-						return true
-					}
+				if slices.Contains(tagFilter.Values, filterValue) {
+					return true
 				}
 			}
 		}
@@ -577,7 +575,7 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 			Labels:    labels,
 		},
 		Spec: appsv1.DaemonSetSpec{
-			RevisionHistoryLimit: ptr.To(int32(2)),
+			RevisionHistoryLimit: new(int32(2)),
 			Selector:             &metav1.LabelSelector{MatchLabels: labels},
 			UpdateStrategy: appsv1.DaemonSetUpdateStrategy{
 				Type: appsv1.RollingUpdateDaemonSetStrategyType,
@@ -622,7 +620,7 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 							},
 						},
 					},
-					AutomountServiceAccountToken: ptr.To(false),
+					AutomountServiceAccountToken: new(false),
 					Containers: []corev1.Container{{
 						Name:            constants.ApplicationName,
 						Image:           image.String(),
@@ -642,7 +640,7 @@ func buildDaemonset(checksumEgressFilter string, blackholingEnabled bool, sleepD
 							},
 						},
 						SecurityContext: &corev1.SecurityContext{
-							AllowPrivilegeEscalation: ptr.To(false),
+							AllowPrivilegeEscalation: new(false),
 							Capabilities: &corev1.Capabilities{
 								Add: []corev1.Capability{"NET_ADMIN"},
 							},
