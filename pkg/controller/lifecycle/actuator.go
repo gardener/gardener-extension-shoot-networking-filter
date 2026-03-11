@@ -30,6 +30,7 @@ import (
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -270,53 +271,46 @@ func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, clus
 	var combinedFilterList []config.Filter
 
 	// Priority order:
-	// 1. shootFilterListSource (if configured) - highest priority
-	// 2. projectFilterListSource (if configured) - fallback if shoot source fails
+	// 1. shootFilterListSource (if configured) - highest priority, falls through only if secret is missing
+	// 2. projectFilterListSource (if configured) - falls through only if secret is missing
 	// 3. downloaded data (from service config) - final fallback
 
 	if shootFilterListSource != nil {
-		// Need shoot client to read from shoot cluster
 		shootClient, err := a.getShootClient(ctx, cluster)
 		if err != nil {
-			a.logger.Error(err, "failed to create shoot client, falling back to other sources")
-			// Fall through to try other sources
-		} else {
-			shootFilters, err := a.readShootFilterList(ctx, shootClient, shootFilterListSource)
-			if err != nil {
-				a.logger.Error(err, "failed to read shoot filter list, falling back to other sources")
-				// Fall through to try other sources
-			} else {
-				a.logger.Info("using shoot filter list", "shootEntries", len(shootFilters), "staticEntries", len(staticFilterList))
-				// Apply tag filters if configured
-				if len(tagFilters) > 0 {
-					shootFilters = filterByTags(shootFilters, tagFilters, a.logger)
-				}
-				// Combine static filters with shoot filters
-				combinedFilterList = append(staticFilterList, shootFilters...)
-				// Generate and return immediately - don't fall through
-				return a.generateSecretData(ctx, combinedFilterList)
+			return nil, fmt.Errorf("failed to create shoot client: %w", err)
+		}
+		shootFilters, err := a.readShootFilterList(ctx, shootClient, shootFilterListSource)
+		if err != nil {
+			if !apierrors.IsNotFound(err) {
+				return nil, fmt.Errorf("failed to read shootFilterListSource: %w", err)
 			}
+			a.logger.Info("shootFilterListSource secret not found, falling back to next source")
+		} else {
+			a.logger.Info("using shoot filter list", "shootEntries", len(shootFilters), "staticEntries", len(staticFilterList))
+			if len(tagFilters) > 0 {
+				shootFilters = filterByTags(shootFilters, tagFilters, a.logger)
+			}
+			return a.generateSecretData(ctx, append(staticFilterList, shootFilters...))
 		}
 	}
 
-	// If shootFilterListSource failed or wasn't configured, try projectFilterListSource
 	if projectFilterListSource != nil {
 		projectFilters, err := a.readProjectFilterList(ctx, namespace, projectFilterListSource)
 		if err != nil {
-			a.logger.Error(err, "failed to read project filter list, falling back to downloaded data")
-			// Fall back to downloaded data on error
+			if !apierrors.IsNotFound(err) {
+				return nil, fmt.Errorf("failed to read projectFilterListSource: %w", err)
+			}
+			a.logger.Info("projectFilterListSource secret not found, falling back to downloaded data")
 			combinedFilterList = a.combineDownloadedAndStaticFilters(staticFilterList, tagFilters)
 		} else {
 			a.logger.Info("using project filter list instead of downloaded data", "projectEntries", len(projectFilters), "staticEntries", len(staticFilterList))
-			// Apply tag filters to project filters if configured
 			if len(tagFilters) > 0 {
 				projectFilters = filterByTags(projectFilters, tagFilters, a.logger)
 			}
-			// Combine static filters with project filters
 			combinedFilterList = append(staticFilterList, projectFilters...)
 		}
 	} else {
-		// No project filter list, use downloaded data
 		combinedFilterList = a.combineDownloadedAndStaticFilters(staticFilterList, tagFilters)
 	}
 
@@ -403,6 +397,9 @@ func (a *actuator) readProjectFilterList(ctx context.Context, namespace string, 
 	// Read from Secret
 	secret := &corev1.Secret{}
 	if err := a.client.Get(ctx, key, secret); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, err // caller can check IsNotFound to fall through
+		}
 		return nil, fmt.Errorf("failed to get Secret %s/%s (ensure it's listed in Shoot.spec.resources): %w", key.Namespace, key.Name, err)
 	}
 
@@ -441,6 +438,9 @@ func (a *actuator) readShootFilterList(ctx context.Context, shootClient client.C
 	// Read from Secret in shoot cluster
 	secret := &corev1.Secret{}
 	if err := shootClient.Get(ctx, key, secret); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, err // caller can check IsNotFound to fall through
+		}
 		return nil, fmt.Errorf("failed to get Secret %s/%s from shoot cluster: %w", key.Namespace, key.Name, err)
 	}
 

@@ -400,7 +400,7 @@ The ConfigMap/Secret data can contain:
 ]
 ```
 
-### Option 2: Shoot Secrets (Direct from Shoot Cluster)
+### Option 2: Shoot Secrets (Directly from Shoot Cluster)
 
 The extension can also read filter lists directly from secrets stored in the shoot cluster itself. 
 
@@ -512,31 +512,30 @@ spec:
 
 ### Merge Behavior
 
-The extension supports three filter sources with the following priority:
+The extension supports three filter sources that are selected exclusively:
 
-**Filter Source Priority:**
-1. **Shoot Secret filters** (if `shootFilterListSource` is configured) - highest priority
-2. **Project Secret filters** (if `projectFilterListSource` is configured) - fallback if shoot source fails
-3. **Downloaded filter list** (from service config) - final fallback
-4. **Static filters** (from shoot providerConfig) - always merged with the selected source
+**Filter Source Selection:**
+1. **Shoot Secret filters** (if `shootFilterListSource` is configured) — falls back to next source only if the secret does not exist yet; any other error (corrupt data, permission denied, etc.) fails the reconciliation
+2. **Project Secret filters** (if `projectFilterListSource` is configured) — same fallback semantics: missing secret → fall through to downloaded data; other errors fail
+3. **Downloaded filter list** (from service config) — used when no secret source is configured, or when the configured secret is not found yet
+4. **Static filters** (from shoot providerConfig) — always merged with the selected source
 
 **Key Points:**
 - `shootFilterListSource` and `projectFilterListSource` are **mutually exclusive** (validation enforces this)
 - Shoot Secret and Project Secret filters **replace** (not append to) the downloaded filter list
 - Static filters are always merged regardless of the source
 - Tag filtering is applied to whichever source is active (shoot, project, or downloaded)
-- If reading the shoot/project Secret fails, the extension falls back to the next source
+- A missing secret is treated as "not yet created" and falls through gracefully; errors such as corrupt data or permission failures are hard errors
 
 **When Shoot Secret is configured:**
-1. Try to read **Shoot Secret filters** from shoot cluster
-2. If that fails, fall back to **Project Secret** (if configured) or **downloaded data**
-3. Tag filtering (if configured) - applied to active source
-4. Static filter list (from shoot providerConfig) - merged with active source
+1. Read **Shoot Secret filters** from shoot cluster — if the secret does not exist, fall through to project/downloaded source; any other error fails
+2. Tag filtering (if configured) — applied to shoot filters
+3. Static filter list (from shoot providerConfig) — merged with shoot filters
 
 **When only Project Secret is configured:**
-1. **Project Secret filters** (replaces downloaded data)
-2. Tag filtering (if configured) - applied to project filters
-3. Static filter list (from shoot providerConfig) - merged with project filters
+1. Read **Project Secret filters** — if the secret does not exist, fall back to downloaded data; any other error fails
+2. Tag filtering (if configured) — applied to project filters
+3. Static filter list (from shoot providerConfig) — merged with project filters
 
 **When neither Shoot nor Project Secret is configured:**
 1. Downloaded filter list (from service config)
