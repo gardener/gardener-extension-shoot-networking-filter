@@ -15,8 +15,10 @@ import (
 	"strconv"
 	"time"
 
+	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
+	"github.com/gardener/gardener/extensions/pkg/util"
 	extensionsv1alpha1helper "github.com/gardener/gardener/pkg/api/extensions/v1alpha1/helper"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
@@ -28,6 +30,7 @@ import (
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -87,6 +90,7 @@ type actuator struct {
 	provider         FilterListProvider
 	logger           logr.Logger
 	scheme           *runtime.Scheme
+	shootClient      client.Client
 }
 
 // Reconcile the Extension resource.
@@ -172,10 +176,12 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 
 		var err error
 		var projectFilterListSource *config.SecretRef
+		var shootFilterListSource *config.SecretRef
 		if internalShootConfig.EgressFilter != nil && isShootDeployment {
 			projectFilterListSource = internalShootConfig.EgressFilter.ProjectFilterListSource
+			shootFilterListSource = internalShootConfig.EgressFilter.ShootFilterListSource
 		}
-		secretData, err = a.readAndRestrictFilterListSecretData(ctx, namespace, staticFilterList, tagFilters, projectFilterListSource)
+		secretData, err = a.readAndRestrictFilterListSecretData(ctx, cluster, namespace, staticFilterList, tagFilters, projectFilterListSource, shootFilterListSource)
 		if err != nil {
 			return err
 		}
@@ -261,30 +267,57 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 	return a.Delete(ctx, log, ex)
 }
 
-func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, namespace string, staticFilterList []config.Filter, tagFilters []config.TagFilter, projectFilterListSource *config.SecretRef) (map[string][]byte, error) {
+func (a *actuator) readAndRestrictFilterListSecretData(ctx context.Context, cluster *controller.Cluster, namespace string, staticFilterList []config.Filter, tagFilters []config.TagFilter, projectFilterListSource *config.SecretRef, shootFilterListSource *config.SecretRef) (map[string][]byte, error) {
 	var combinedFilterList []config.Filter
 
-	// If project filter list is configured, use it instead of downloaded data
+	// Priority order:
+	// 1. shootFilterListSource (if configured) - highest priority, falls through only if secret is missing
+	// 2. projectFilterListSource (if configured) - falls through only if secret is missing
+	// 3. downloaded data (from service config) - final fallback
+
+	if shootFilterListSource != nil {
+		shootClient, err := a.getShootClient(ctx, cluster)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create shoot client: %w", err)
+		}
+		shootFilters, err := a.readShootFilterList(ctx, shootClient, shootFilterListSource)
+		if err != nil {
+			if !apierrors.IsNotFound(err) {
+				return nil, fmt.Errorf("failed to read shootFilterListSource: %w", err)
+			}
+			a.logger.Info("shootFilterListSource secret not found, falling back to next source")
+		} else {
+			a.logger.Info("using shoot filter list", "shootEntries", len(shootFilters), "staticEntries", len(staticFilterList))
+			if len(tagFilters) > 0 {
+				shootFilters = filterByTags(shootFilters, tagFilters, a.logger)
+			}
+			return a.generateSecretData(ctx, append(staticFilterList, shootFilters...))
+		}
+	}
+
 	if projectFilterListSource != nil {
 		projectFilters, err := a.readProjectFilterList(ctx, namespace, projectFilterListSource)
 		if err != nil {
-			a.logger.Error(err, "failed to read project filter list, falling back to downloaded data")
-			// Fall back to downloaded data on error
+			if !apierrors.IsNotFound(err) {
+				return nil, fmt.Errorf("failed to read projectFilterListSource: %w", err)
+			}
+			a.logger.Info("projectFilterListSource secret not found, falling back to downloaded data")
 			combinedFilterList = a.combineDownloadedAndStaticFilters(staticFilterList, tagFilters)
 		} else {
 			a.logger.Info("using project filter list instead of downloaded data", "projectEntries", len(projectFilters), "staticEntries", len(staticFilterList))
-			// Apply tag filters to project filters if configured
 			if len(tagFilters) > 0 {
 				projectFilters = filterByTags(projectFilters, tagFilters, a.logger)
 			}
-			// Combine static filters with project filters
 			combinedFilterList = append(staticFilterList, projectFilters...)
 		}
 	} else {
-		// No project filter list, use downloaded data
 		combinedFilterList = a.combineDownloadedAndStaticFilters(staticFilterList, tagFilters)
 	}
 
+	return a.generateSecretData(ctx, combinedFilterList)
+}
+
+func (a *actuator) generateSecretData(ctx context.Context, combinedFilterList []config.Filter) (map[string][]byte, error) {
 	// Generate IPv4/IPv6 lists from combined filter list
 	ipv4List, ipv6List, err := generateEgressFilterValues(combinedFilterList, a.logger)
 	if err != nil {
@@ -364,12 +397,62 @@ func (a *actuator) readProjectFilterList(ctx context.Context, namespace string, 
 	// Read from Secret
 	secret := &corev1.Secret{}
 	if err := a.client.Get(ctx, key, secret); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, err // caller can check IsNotFound to fall through
+		}
 		return nil, fmt.Errorf("failed to get Secret %s/%s (ensure it's listed in Shoot.spec.resources): %w", key.Namespace, key.Name, err)
 	}
 
+	return a.parseSecretFilterList(secret, dataKey, "project filter list")
+}
+
+// / getShootClient creates a client for the shoot cluster
+func (a *actuator) getShootClient(ctx context.Context, cluster *controller.Cluster) (client.Client, error) {
+	_, shootClient, err := util.NewClientForShoot(ctx, a.client, cluster.ObjectMeta.Name, client.Options{}, extensionsconfig.RESTOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create shoot client: %w", err)
+	}
+	return shootClient, nil
+}
+
+// readShootFilterList reads filter list from a Secret in the shoot cluster.
+// Unlike readProjectFilterList, this reads directly from the shoot, not from synced secrets.
+func (a *actuator) readShootFilterList(ctx context.Context, shootClient client.Client, ref *config.SecretRef) ([]config.Filter, error) {
+	// Get namespace, default to "kube-system"
+	namespace := ref.Namespace
+	if namespace == "" {
+		namespace = "kube-system"
+	}
+
+	key := client.ObjectKey{
+		Namespace: namespace,
+		Name:      ref.Name,
+	}
+
+	// Get the key, default to "filterList"
+	dataKey := ref.Key
+	if dataKey == "" {
+		dataKey = "filterList"
+	}
+
+	// Read from Secret in shoot cluster
+	secret := &corev1.Secret{}
+	if err := shootClient.Get(ctx, key, secret); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, err // caller can check IsNotFound to fall through
+		}
+		return nil, fmt.Errorf("failed to get Secret %s/%s from shoot cluster: %w", key.Namespace, key.Name, err)
+	}
+
+	return a.parseSecretFilterList(secret, dataKey, "shoot filter list")
+}
+
+// parseSecretFilterList extracts, decompresses (if needed), and parses a filter list from a Secret.
+// This is shared logic between readProjectFilterList and readShootFilterList.
+func (a *actuator) parseSecretFilterList(secret *corev1.Secret, dataKey string, logPrefix string) ([]config.Filter, error) {
 	data, ok := secret.Data[dataKey]
 	if !ok {
-		return nil, fmt.Errorf("key %q not found in Secret %s/%s", dataKey, key.Namespace, key.Name)
+		return nil, fmt.Errorf("key %q not found in Secret %s/%s", dataKey, secret.Namespace, secret.Name)
 	}
 
 	// Try to decompress if gzip-encoded
@@ -380,7 +463,7 @@ func (a *actuator) readProjectFilterList(ctx context.Context, namespace string, 
 		if err != nil {
 			return nil, fmt.Errorf("failed to decompress gzip data: %w", err)
 		}
-		a.logger.Info("decompressed project filter list", "compressed", len(data), "decompressed", len(decompressed))
+		a.logger.Info("decompressed "+logPrefix, "compressed", len(data), "decompressed", len(decompressed))
 		data = decompressed
 	} else if err != gzip.ErrHeader {
 		// ErrHeader means it's not gzipped (plain text), which is fine

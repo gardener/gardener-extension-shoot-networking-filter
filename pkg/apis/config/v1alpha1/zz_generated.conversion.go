@@ -175,6 +175,7 @@ func autoConvert_v1alpha1_EgressFilter_To_config_EgressFilter(in *EgressFilter, 
 	out.EnsureConnectivity = (*config.EnsureConnectivity)(unsafe.Pointer(in.EnsureConnectivity))
 	out.TagFilters = *(*[]config.TagFilter)(unsafe.Pointer(&in.TagFilters))
 	out.ProjectFilterListSource = (*config.SecretRef)(unsafe.Pointer(in.ProjectFilterListSource))
+	out.ShootFilterListSource = (*config.SecretRef)(unsafe.Pointer(in.ShootFilterListSource))
 	return nil
 }
 
@@ -193,6 +194,7 @@ func autoConvert_config_EgressFilter_To_v1alpha1_EgressFilter(in *config.EgressF
 	out.EnsureConnectivity = (*EnsureConnectivity)(unsafe.Pointer(in.EnsureConnectivity))
 	out.TagFilters = *(*[]TagFilter)(unsafe.Pointer(&in.TagFilters))
 	out.ProjectFilterListSource = (*SecretRef)(unsafe.Pointer(in.ProjectFilterListSource))
+	out.ShootFilterListSource = (*SecretRef)(unsafe.Pointer(in.ShootFilterListSource))
 	return nil
 }
 
@@ -248,6 +250,7 @@ func Convert_config_Filter_To_v1alpha1_Filter(in *config.Filter, out *Filter, s 
 func autoConvert_v1alpha1_SecretRef_To_config_SecretRef(in *SecretRef, out *config.SecretRef, s conversion.Scope) error {
 	out.Name = in.Name
 	out.Key = in.Key
+	out.Namespace = in.Namespace
 	return nil
 }
 
@@ -259,6 +262,7 @@ func Convert_v1alpha1_SecretRef_To_config_SecretRef(in *SecretRef, out *config.S
 func autoConvert_config_SecretRef_To_v1alpha1_SecretRef(in *config.SecretRef, out *SecretRef, s conversion.Scope) error {
 	out.Name = in.Name
 	out.Key = in.Key
+	out.Namespace = in.Namespace
 	return nil
 }
 

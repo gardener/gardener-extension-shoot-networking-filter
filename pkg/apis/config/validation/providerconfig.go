@@ -83,6 +83,23 @@ func validateEgressFilterConfig(egressFilter *config.EgressFilter, fldPath *fiel
 		))
 	}
 
+	// Validate mutual exclusivity of projectFilterListSource and shootFilterListSource
+	if egressFilter.ProjectFilterListSource != nil && egressFilter.ShootFilterListSource != nil {
+		allErrs = append(allErrs, field.Invalid(
+			fldPath,
+			"",
+			"projectFilterListSource and shootFilterListSource are mutually exclusive, only one can be specified",
+		))
+	}
+
+	if egressFilter.ProjectFilterListSource != nil {
+		allErrs = append(allErrs, validateSecretRef(egressFilter.ProjectFilterListSource, fldPath.Child("projectFilterListSource"))...)
+	}
+
+	if egressFilter.ShootFilterListSource != nil {
+		allErrs = append(allErrs, validateSecretRef(egressFilter.ShootFilterListSource, fldPath.Child("shootFilterListSource"))...)
+	}
+
 	return allErrs
 }
 
@@ -153,5 +170,26 @@ func validateWorkersConfig(workers *config.Workers, fldPath *field.Path) field.E
 			allErrs = append(allErrs, field.Invalid(fldPath.Index(index).Child("names"), name, fmt.Sprintf("worker name is not valid: %s", msg)))
 		}
 	}
+	return allErrs
+}
+
+func validateSecretRef(ref *config.SecretRef, fldPath *field.Path) field.ErrorList {
+	if ref == nil {
+		return nil
+	}
+
+	var allErrs field.ErrorList
+
+	if ref.Name == "" {
+		allErrs = append(allErrs, field.Required(fldPath.Child("name"), "secret name must be specified"))
+	}
+
+	if ref.Namespace != "" {
+		// Validate namespace format
+		for _, msg := range validation.IsDNS1123Label(ref.Namespace) {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("namespace"), ref.Namespace, msg))
+		}
+	}
+
 	return allErrs
 }

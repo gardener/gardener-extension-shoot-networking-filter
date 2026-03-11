@@ -118,6 +118,11 @@ func (in *EgressFilter) DeepCopyInto(out *EgressFilter) {
 		*out = new(SecretRef)
 		**out = **in
 	}
+	if in.ShootFilterListSource != nil {
+		in, out := &in.ShootFilterListSource, &out.ShootFilterListSource
+		*out = new(SecretRef)
+		**out = **in
+	}
 	return
 }
 
