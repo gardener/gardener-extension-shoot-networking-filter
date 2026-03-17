@@ -19,13 +19,6 @@ cd "$repo_root/gardener"
 git checkout "$gardener_version"
 source "$repo_root/gardener/hack/ci-common.sh"
 
-ensure_local_gardener_cloud_hosts
-
-grep -qxF '172.18.255.1 api.e2e-default.local.external.local.gardener.cloud' /etc/hosts || echo '172.18.255.1 api.e2e-default.local.external.local.gardener.cloud' >> /etc/hosts
-grep -qxF '172.18.255.1 api.e2e-blackholing.local.external.local.gardener.cloud' /etc/hosts || echo '172.18.255.1 api.e2e-blackholing.local.external.local.gardener.cloud' >> /etc/hosts
-grep -qxF '172.18.255.1 api.e2e-worker-group.local.external.local.gardener.cloud' /etc/hosts || echo '172.18.255.1 api.e2e-worker-group.local.external.local.gardener.cloud' >> /etc/hosts
-grep -qxF '127.0.0.1 garden.local.gardener.cloud' /etc/hosts || echo '127.0.0.1 garden.local.gardener.cloud' >> /etc/hosts
-
 make kind-up
 trap '{
   cd "$repo_root/gardener"
