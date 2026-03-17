@@ -20,7 +20,6 @@ require (
 	k8s.io/client-go v0.35.2
 	k8s.io/code-generator v0.35.2
 	k8s.io/component-base v0.35.2
-	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
 	sigs.k8s.io/controller-runtime v0.23.3
 )
 
@@ -226,6 +225,7 @@ require (
 	k8s.io/kubelet v0.35.2 // indirect
 	k8s.io/metrics v0.35.2 // indirect
 	k8s.io/pod-security-admission v0.35.2 // indirect
+	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2 // indirect
 	sigs.k8s.io/controller-tools v0.20.1 // indirect
 	sigs.k8s.io/gateway-api v1.3.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
