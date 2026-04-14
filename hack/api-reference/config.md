@@ -4,19 +4,20 @@
 <a href="#shoot-networking-filter.extensions.config.gardener.cloud%2fv1alpha1">shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1</a>
 </li>
 </ul>
+
 <h2 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1">shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1</h2>
 <p>
-<p>Package v1alpha1 contains the shoot networking filter extension configuration.</p>
+
 </p>
-Resource Types:
-<ul><li>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Configuration">Configuration</a>
-</li></ul>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Configuration">Configuration
+
+<h3 id="configuration">Configuration
 </h3>
+
+
 <p>
-<p>Configuration contains information about the policy filter configuration.</p>
+Configuration contains information about the policy filter configuration.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -25,30 +26,12 @@ Resource Types:
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>
-<code>apiVersion</code></br>
-string</td>
-<td>
-<code>
-shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1
-</code>
-</td>
-</tr>
-<tr>
-<td>
-<code>kind</code></br>
-string
-</td>
-<td><code>Configuration</code></td>
-</tr>
+
 <tr>
 <td>
 <code>egressFilter</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">
-EgressFilter
-</a>
+<a href="#egressfilter">EgressFilter</a>
 </em>
 </td>
 <td>
@@ -60,9 +43,7 @@ EgressFilter
 <td>
 <code>healthCheckConfig</code></br>
 <em>
-<a href="https://github.com/gardener/gardener/extensions/pkg/apis/config">
-github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1.HealthCheckConfig
-</a>
+<a href="#healthcheckconfig">HealthCheckConfig</a>
 </em>
 </td>
 <td>
@@ -70,17 +51,23 @@ github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1.HealthCheckConf
 <p>HealthCheckConfig is the config for the health check controller.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.DownloaderConfig">DownloaderConfig
+
+
+<h3 id="downloaderconfig">DownloaderConfig
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
+(<em>Appears on:</em><a href="#egressfilter">EgressFilter</a>)
 </p>
+
 <p>
-<p>DownloaderConfig contains the configuration for the filter list downloader.</p>
+DownloaderConfig contains the configuration for the filter list downloader.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -89,6 +76,7 @@ github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1.HealthCheckConf
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>endpoint</code></br>
@@ -109,36 +97,38 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>OAuth2Endpoint contains the optional OAuth endpoint for fetching the access token.
-If specified, the OAuth2Secret must be provided, too.</p>
+<p>OAuth2Endpoint contains the optional OAuth endpoint for fetching the access token.<br />If specified, the OAuth2Secret must be provided, too.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>refreshPeriod</code></br>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.28/#duration-v1-meta">
-Kubernetes meta/v1.Duration
-</a>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#duration-v1-meta">Duration</a>
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>RefreshPeriod is interval for refreshing the filter list.
-If unset, the filter list is only fetched on startup.</p>
+<p>RefreshPeriod is interval for refreshing the filter list.<br />If unset, the filter list is only fetched on startup.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter
+
+
+<h3 id="egressfilter">EgressFilter
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Configuration">Configuration</a>)
+(<em>Appears on:</em><a href="#configuration">Configuration</a>)
 </p>
+
 <p>
-<p>EgressFilter contains the configuration for the egress filter.</p>
+EgressFilter contains the configuration for the egress filter.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -147,11 +137,12 @@ If unset, the filter list is only fetched on startup.</p>
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>blackholingEnabled</code></br>
 <em>
-bool
+boolean
 </em>
 </td>
 <td>
@@ -162,9 +153,7 @@ bool
 <td>
 <code>workers</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Workers">
-Workers
-</a>
+<a href="#workers">Workers</a>
 </em>
 </td>
 <td>
@@ -176,9 +165,7 @@ Workers
 <td>
 <code>sleepDuration</code></br>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.28/#duration-v1-meta">
-Kubernetes meta/v1.Duration
-</a>
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#duration-v1-meta">Duration</a>
 </em>
 </td>
 <td>
@@ -189,53 +176,42 @@ Kubernetes meta/v1.Duration
 <td>
 <code>filterListProviderType</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.FilterListProviderType">
-FilterListProviderType
-</a>
+<a href="#filterlistprovidertype">FilterListProviderType</a>
 </em>
 </td>
 <td>
-<p>FilterListProviderType specifies how the filter list is retrieved.
-Supported types are <code>static</code> and <code>download</code>.</p>
+<p>FilterListProviderType specifies how the filter list is retrieved.<br />Supported types are `static` and `download`.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>staticFilterList</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Filter">
-[]Filter
-</a>
+<a href="#filter">Filter</a> array
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>StaticFilterList contains the static filter list.
-Only used for provider type <code>static</code>.</p>
+<p>StaticFilterList contains the static filter list.<br />Only used for provider type `static`.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>downloaderConfig</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.DownloaderConfig">
-DownloaderConfig
-</a>
+<a href="#downloaderconfig">DownloaderConfig</a>
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>DownloaderConfig contains the configuration for the filter list downloader.
-Only used for provider type <code>download</code>.</p>
+<p>DownloaderConfig contains the configuration for the filter list downloader.<br />Only used for provider type `download`.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>ensureConnectivity</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EnsureConnectivity">
-EnsureConnectivity
-</a>
+<a href="#ensureconnectivity">EnsureConnectivity</a>
 </em>
 </td>
 <td>
@@ -247,58 +223,55 @@ EnsureConnectivity
 <td>
 <code>tagFilters</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.TagFilter">
-[]TagFilter
-</a>
+<a href="#tagfilter">TagFilter</a> array
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>TagFilters contains filters to select entries based on tags.
-Only used with v2 format filter lists.</p>
+<p>TagFilters contains filters to select entries based on tags.<br />Only used with v2 format filter lists.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>projectFilterListSource</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.SecretRef">
-SecretRef
-</a>
+<a href="#secretref">SecretRef</a>
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>ProjectFilterListSource references a Secret containing additional filter entries.
-The Secret must be listed in Shoot.spec.resources for Gardener to sync it automatically.</p>
+<p>ProjectFilterListSource references a Secret containing additional filter entries.<br />The Secret must be listed in Shoot.spec.resources for Gardener to sync it automatically.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>shootFilterListSource</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.SecretRef">
-SecretRef
-</a>
+<a href="#secretref">SecretRef</a>
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>ShootFilterListSource references a Secret in the shoot cluster containing additional filter entries.
-Mutually exclusive with ProjectFilterListSource.</p>
+<p>ShootFilterListSource references a Secret in the shoot cluster containing additional filter entries.<br />Mutually exclusive with ProjectFilterListSource.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EnsureConnectivity">EnsureConnectivity
+
+
+<h3 id="ensureconnectivity">EnsureConnectivity
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
+(<em>Appears on:</em><a href="#egressfilter">EgressFilter</a>)
 </p>
+
 <p>
-<p>EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.</p>
+EnsureConnectivity configures the removal of seed and/or shoot load balancers IPs from the filter list.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -307,11 +280,12 @@ Mutually exclusive with ProjectFilterListSource.</p>
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>seedNamespaces</code></br>
 <em>
-[]string
+string array
 </em>
 </td>
 <td>
@@ -319,17 +293,23 @@ Mutually exclusive with ProjectFilterListSource.</p>
 <p>SeedNamespaces contains the seed namespaces to check for load balancers.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Filter">Filter
+
+
+<h3 id="filter">Filter
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
+(<em>Appears on:</em><a href="#egressfilter">EgressFilter</a>)
 </p>
+
 <p>
-<p>Filter specifies a network-CIDR policy pair.</p>
+Filter specifies a network-CIDR policy pair.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -338,6 +318,7 @@ Mutually exclusive with ProjectFilterListSource.</p>
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>network</code></br>
@@ -353,22 +334,18 @@ string
 <td>
 <code>policy</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Policy">
-Policy
-</a>
+<a href="#policy">Policy</a>
 </em>
 </td>
 <td>
-<p>Policy is the access policy (<code>BLOCK_ACCESS</code> or <code>ALLOW_ACCESS</code>).</p>
+<p>Policy is the access policy (`BLOCK_ACCESS` or `ALLOW_ACCESS`).</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>tags</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Tag">
-[]Tag
-</a>
+<a href="#tag">Tag</a> array
 </em>
 </td>
 <td>
@@ -376,37 +353,53 @@ Policy
 <p>Tags contains metadata tags for the entry (preserved from v2 format).</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.FilterListProviderType">FilterListProviderType
-(<code>string</code> alias)</p></h3>
-<p>
-(<em>Appears on:</em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
-</p>
-<p>
-</p>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Policy">Policy
-(<code>string</code> alias)</p></h3>
-<p>
-(<em>Appears on:</em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Filter">Filter</a>, 
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.TagFilter">TagFilter</a>)
-</p>
-<p>
-<p>Policy is the access policy</p>
-</p>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.SecretRef">SecretRef
+
+
+<h3 id="filterlistprovidertype">FilterListProviderType
 </h3>
+<p><em>Underlying type: string</em></p>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
+(<em>Appears on:</em><a href="#egressfilter">EgressFilter</a>)
 </p>
+
 <p>
-<p>SecretRef references a Secret containing filter list data.
+
+</p>
+
+
+<h3 id="policy">Policy
+</h3>
+<p><em>Underlying type: string</em></p>
+
+
+<p>
+(<em>Appears on:</em><a href="#filter">Filter</a>, <a href="#tagfilter">TagFilter</a>)
+</p>
+
+<p>
+Policy is the access policy
+</p>
+
+
+<h3 id="secretref">SecretRef
+</h3>
+
+
+<p>
+(<em>Appears on:</em><a href="#egressfilter">EgressFilter</a>)
+</p>
+
+<p>
+SecretRef references a Secret containing filter list data.
 - For ProjectFilterListSource: Secret in seed cluster (synced by Gardener from Shoot.spec.resources)
-- For ShootFilterListSource: Secret directly in the shoot cluster (not synced)</p>
+- For ShootFilterListSource: Secret directly in the shoot cluster (not synced)
 </p>
+
 <table>
 <thead>
 <tr>
@@ -415,6 +408,7 @@ Policy
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>name</code></br>
@@ -447,21 +441,26 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>Namespace is the namespace of the Secret in the shoot cluster.
-Only used for ShootFilterListSource.</p>
+<p>Namespace is the namespace of the Secret in the shoot cluster.<br />Only used for ShootFilterListSource.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Tag">Tag
+
+
+<h3 id="tag">Tag
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Filter">Filter</a>)
+(<em>Appears on:</em><a href="#filter">Filter</a>)
 </p>
+
 <p>
-<p>Tag represents a metadata tag with a name and values.</p>
+Tag represents a metadata tag with a name and values.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -470,6 +469,7 @@ Only used for ShootFilterListSource.</p>
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>name</code></br>
@@ -485,24 +485,30 @@ string
 <td>
 <code>values</code></br>
 <em>
-[]string
+string array
 </em>
 </td>
 <td>
 <p>Values is the list of tag values.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.TagFilter">TagFilter
+
+
+<h3 id="tagfilter">TagFilter
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
+(<em>Appears on:</em><a href="#egressfilter">EgressFilter</a>)
 </p>
+
 <p>
-<p>TagFilter specifies a tag-based filter criterion.</p>
+TagFilter specifies a tag-based filter criterion.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -511,6 +517,7 @@ string
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>name</code></br>
@@ -526,41 +533,42 @@ string
 <td>
 <code>values</code></br>
 <em>
-[]string
+string array
 </em>
 </td>
 <td>
-<p>Values is the list of allowed tag values.
-An entry matches if it has this tag with any of these values.</p>
+<p>Values is the list of allowed tag values.<br />An entry matches if it has this tag with any of these values.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>policy</code></br>
 <em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Policy">
-Policy
-</a>
+<a href="#policy">Policy</a>
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>Policy is an optional access policy to override for matching entries.
-If specified, matching entries will have their policy changed to this value.
-If omitted, entries keep their original policy from the source filter list.</p>
+<p>Policy is an optional access policy to override for matching entries.<br />If specified, matching entries will have their policy changed to this value.<br />If omitted, entries keep their original policy from the source filter list.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.Workers">Workers
+
+
+<h3 id="workers">Workers
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#shoot-networking-filter.extensions.config.gardener.cloud/v1alpha1.EgressFilter">EgressFilter</a>)
+(<em>Appears on:</em><a href="#egressfilter">EgressFilter</a>)
 </p>
+
 <p>
-<p>Workers allows to set the blocking mode for specific worker groups which may differ from the default.</p>
+Workers allows to set the blocking mode for specific worker groups which may differ from the default.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -569,11 +577,12 @@ If omitted, entries keep their original policy from the source filter list.</p>
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>blackholingEnabled</code></br>
 <em>
-bool
+boolean
 </em>
 </td>
 <td>
@@ -584,16 +593,15 @@ bool
 <td>
 <code>names</code></br>
 <em>
-[]string
+string array
 </em>
 </td>
 <td>
 <p>Names is a list of worker groups to use the specified blocking mode.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<hr/>
-<p><em>
-Generated with <a href="https://github.com/ahmetb/gen-crd-api-reference-docs">gen-crd-api-reference-docs</a>
-</em></p>
+
+
