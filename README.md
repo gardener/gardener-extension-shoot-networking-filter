@@ -1,4 +1,4 @@
-# [Gardener Extension for Networking Filter](https://gardener.cloud)
+# Gardener Extension for Networking Filter
 
 [![REUSE status](https://api.reuse.software/badge/github.com/gardener/gardener-extension-shoot-networking-filter)](https://api.reuse.software/info/github.com/gardener/gardener-extension-shoot-networking-filter)
 [![Build](https://github.com/gardener/gardener-extension-shoot-networking-filter/actions/workflows/non-release.yaml/badge.svg)](https://github.com/gardener/gardener-extension-shoot-networking-filter/actions/workflows/non-release.yaml)
