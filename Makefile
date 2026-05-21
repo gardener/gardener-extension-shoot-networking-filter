@@ -90,6 +90,7 @@ generate: $(CONTROLLER_GEN) $(CRD_REF_DOCS) $(HELM) $(YQ) $(EXTENSION_GEN) $(KUB
 	@REPO_ROOT=$(REPO_ROOT) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-sequential.sh ./charts/... ./cmd/... ./pkg/... ./test/... ./example/...
 	@./hack/prepare-operator-extension.sh
 	@$(MAKE) format
+	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) RENOVATE_CONFIG=$(REPO_ROOT)/.github/renovate.json5 bash $(GARDENER_HACK_DIR)/generate-renovate-ignore-deps.sh
 
 .PHONY: format
 format: $(GOIMPORTS) $(GOIMPORTSREVISER)
