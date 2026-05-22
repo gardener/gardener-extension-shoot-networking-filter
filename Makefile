@@ -4,6 +4,7 @@
 
 ENSURE_GARDENER_MOD         := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
 GARDENER_HACK_DIR           := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
+GARDENER_DEV_SETUP_DIR      := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/dev-setup
 EXTENSION_PREFIX            := gardener-extension
 NAME                        := shoot-networking-filter
 ADMISSION_NAME              := $(NAME)-admission
@@ -126,22 +127,17 @@ verify-extended: check-generate check format test test-cov test-clean sast-repor
 test-e2e-local: $(KIND) $(YQ) $(GINKGO)
 	@$(REPO_ROOT)/hack/test-e2e-provider-local.sh --procs=3
 
-.PHONY: test-e2e-operator
-test-e2e-operator: $(KIND) $(YQ) $(GINKGO)
-	@$(REPO_ROOT)/hack/test-e2e-operator-local.sh --procs=3
-
-.PHONY: extension-up extension-operator-up
-extension-up extension-operator-up: export EXTENSION_VERSION = $(VERSION)
-extension-up extension-operator-up: export SKAFFOLD_DEFAULT_REPO = registry.local.gardener.cloud:5001
-extension-up extension-operator-up:  export SKAFFOLD_PUSH = true
-extension-up extension-operator-up: export LD_FLAGS = $(shell bash $(GARDENER_HACK_DIR)/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION gardener-extension-shoot-networking-filter)
-extension-operator-up: export EXTENSION_GARDENER_HACK_DIR = $(GARDENER_HACK_DIR)
-extension-operator-up extension-operator-down: export SKAFFOLD_FILENAME = skaffold-operator.yaml
-extension-up extension-operator-up: $(SKAFFOLD) $(HELM) $(KUBECTL)
+.PHONY: extension-up
+extension-up: export EXTENSION_VERSION = $(VERSION)
+extension-up: export SKAFFOLD_DEFAULT_REPO = registry.local.gardener.cloud:5001
+extension-up: export SKAFFOLD_PUSH = true
+extension-up: export LD_FLAGS = $(shell bash $(GARDENER_HACK_DIR)/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION gardener-extension-shoot-networking-filter)
+extension-up: export EXTENSION_GARDENER_DEV_SETUP_DIR = $(GARDENER_DEV_SETUP_DIR)
+extension-up: $(SKAFFOLD) $(HELM) $(KUBECTL)
 	$(SKAFFOLD) run --cache-artifacts=true
 
-.PHONY: extension-down extension-operator-down
-extension-down extension-operator-down:
+.PHONY: extension-down
+extension-down:
 	$(SKAFFOLD) delete
 
 

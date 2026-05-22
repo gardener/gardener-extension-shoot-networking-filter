@@ -26,9 +26,8 @@ var logger = log.Log.WithName("shoot-networking-filter-webhook")
 func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	logger.Info("Setting up webhook", "name", Name)
 	return extensionswebhook.New(mgr, extensionswebhook.Args{
-		Provider: "networking-filter",
-		Name:     Name,
-		Path:     "/webhooks/validate",
+		Name: Name,
+		Path: "/webhooks/validate",
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
 			NewShootValidator(): {{Obj: &core.Shoot{}}},
 		},
