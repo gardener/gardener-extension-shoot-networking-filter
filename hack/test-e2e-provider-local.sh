@@ -25,7 +25,7 @@ trap '{
   export_artifacts "gardener-local"
   make kind-down
 }' EXIT
-export KUBECONFIG=$repo_root/gardener/example/gardener-local/kind/local/kubeconfig
+export KUBECONFIG=$repo_root/gardener/dev-setup/kubeconfigs/seed/kubeconfig
 echo ">>>>>>>>>>>>>>>>>>>> kind-up done"
 echo ">>>>>>>>>>>>>>>>>>>> gardener-up"
 make gardener-up
@@ -37,6 +37,7 @@ echo ">>>>>>>>>>>>>>>>>>>> extension-up"
 make extension-up
 echo "<<<<<<<<<<<<<<<<<<<< extension-up done"
 
+export KUBECONFIG=$repo_root/gardener/dev-setup/kubeconfigs/virtual-garden/kubeconfig
 export REPO_ROOT=$repo_root
 # reduce flakiness in contended pipelines
 export GOMEGA_DEFAULT_EVENTUALLY_TIMEOUT=5s

@@ -194,23 +194,22 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 
 	if isShootDeployment {
 		return managedresources.CreateForShoot(ctx, a.client, namespace, constants.ManagedResourceNamesShoot, "gardener-extension-shoot-networking-filter", false, shootResources)
-	} else {
-		name, err := a.getRuntimeOrSeedManagedResourceName()
-		if err != nil {
-			return err
-		}
-		if name == constants.ManagedResourceNamesSeed {
-			seedIsGarden, err := gardenletutils.SeedIsGarden(ctx, a.client)
-			if err != nil {
-				return fmt.Errorf("failed to check if seed is the Garden runtime cluster: %w", err)
-			}
-			if seedIsGarden {
-				// nothing to do, the resources are already deployed for the runtime cluster.
-				shootResources = map[string][]byte{}
-			}
-		}
-		return managedresources.CreateForSeed(ctx, a.client, namespace, name, false, shootResources)
 	}
+	name, err := a.getRuntimeOrSeedManagedResourceName()
+	if err != nil {
+		return err
+	}
+	if name == constants.ManagedResourceNamesSeed {
+		seedIsGarden, err := gardenletutils.ClusterIsGarden(ctx, a.client)
+		if err != nil {
+			return fmt.Errorf("failed to check if seed is the Garden runtime cluster: %w", err)
+		}
+		if seedIsGarden {
+			// nothing to do, the resources are already deployed for the runtime cluster.
+			shootResources = map[string][]byte{}
+		}
+	}
+	return managedresources.CreateForSeed(ctx, a.client, namespace, name, false, shootResources)
 }
 
 // Delete the Extension resource.
