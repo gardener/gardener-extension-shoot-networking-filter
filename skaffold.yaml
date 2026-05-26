@@ -46,14 +46,14 @@ build:
     - image: local-skaffold/gardener-extension-shoot-networking-filter-admission/charts/application
       custom:
         buildCommand: |
-          bash {{.EXTENSION_GARDENER_DEV_SETUP_DIR}}/push-helm.sh ./charts/gardener-extension-shoot-networking-filter-admission/charts/application .image.ref
+          bash {{.EXTENSION_GARDENER_HACK_DIR}}/push-helm.sh ./charts/gardener-extension-shoot-networking-filter-admission/charts/application .image.ref
         dependencies:
           paths:
             - charts/gardener-extension-shoot-networking-filter-admission/charts/application
     - image: local-skaffold/gardener-extension-shoot-networking-filter-admission/charts/runtime
       custom:
         buildCommand: |
-          bash {{.EXTENSION_GARDENER_DEV_SETUP_DIR}}/push-helm.sh ./charts/gardener-extension-shoot-networking-filter-admission/charts/runtime .image.ref
+          bash {{.EXTENSION_GARDENER_HACK_DIR}}/push-helm.sh ./charts/gardener-extension-shoot-networking-filter-admission/charts/runtime .image.ref
         dependencies:
           paths:
             - charts/gardener-extension-shoot-networking-filter-admission/charts/runtime
@@ -63,7 +63,7 @@ build:
     - image: local-skaffold/gardener-extension-shoot-networking-filter/charts/extension
       custom:
         buildCommand: |
-          bash {{.EXTENSION_GARDENER_DEV_SETUP_DIR}}/push-helm.sh ./charts/gardener-extension-shoot-networking-filter .image.ref
+          bash {{.EXTENSION_GARDENER_HACK_DIR}}/push-helm.sh ./charts/gardener-extension-shoot-networking-filter .image.ref
         dependencies:
           paths:
             - charts/gardener-extension-shoot-networking-filter
