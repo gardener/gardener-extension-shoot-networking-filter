@@ -131,7 +131,7 @@ extension-up: export EXTENSION_VERSION = $(VERSION)
 extension-up: export SKAFFOLD_DEFAULT_REPO = registry.local.gardener.cloud:5001
 extension-up: export SKAFFOLD_PUSH = true
 extension-up: export LD_FLAGS = $(shell bash $(GARDENER_HACK_DIR)/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION gardener-extension-shoot-networking-filter)
-extension-up: export EXTENSION_GARDENER_HACK_DIR = $(GARDENER_DEV_HACK_DIR)
+extension-up: export EXTENSION_GARDENER_HACK_DIR = $(GARDENER_HACK_DIR)
 extension-up: $(SKAFFOLD) $(HELM) $(KUBECTL)
 	$(SKAFFOLD) run --cache-artifacts=true
 
