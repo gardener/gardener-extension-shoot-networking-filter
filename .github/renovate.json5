@@ -19,6 +19,14 @@
       "automerge": true
     },
     {
+      "matchManagers": ["github-actions"],
+      "matchPackagePatterns": [
+        "^actions/checkout$",
+        "^actions/setup-go$",
+      ],
+      "automerge": true
+    },
+    {
       // Group gardener updates in one PR.
       groupName: "gardener",
       matchManagers: ["gomod"],
