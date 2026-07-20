@@ -2,17 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build tools
 // +build tools
 
 // This package imports things required by build scripts, to force `go mod` to see them as dependencies
 package tools
 
 import (
-	_ "github.com/gardener/gardener/hack"
-	_ "github.com/gardener/gardener/hack/.ci"
-
-	_ "github.com/elastic/crd-ref-docs"
-	_ "golang.org/x/tools/cmd/goimports"
-	_ "go.uber.org/mock/mockgen"
-	_ "k8s.io/code-generator"
+	_ "github.com/gardener/gardener/hack/tools"
 )
