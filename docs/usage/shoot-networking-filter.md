@@ -562,8 +562,3 @@ The extension supports three filter sources that are selected exclusively:
 The key principle: **ALLOW_ACCESS policies carve out exceptions from BLOCK_ACCESS policies**. All filters from the active source (project Secret OR downloaded) are merged with static filters, then ALLOW entries remove subnets from BLOCK entries.
 
 This allows to completely override the default filter list while still being able to add shoot-specific static filters.
-
-## Domain-Based and SNI-Based Filtering (Issue #143)
-
-For domain-based, FQDN, and SNI egress filtering required for regulated workloads (e.g., US NIST 800-53 R5 SC-7 (8) compliance), please refer to the architecture design proposal: [Domain and SNI Based Egress Filtering](../proposals/01-egress-domain-sni-filtering.md).
-
