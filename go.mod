@@ -5,7 +5,7 @@ go 1.26.4
 require (
 	github.com/gardener/gardener v1.148.5
 	github.com/gardener/gardener/hack/tools v1.149.3
-	github.com/gardener/gardener/pkg/apis v1.148.4
+	github.com/gardener/gardener/pkg/apis v1.148.5
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.32.0
 	github.com/onsi/gomega v1.42.1
