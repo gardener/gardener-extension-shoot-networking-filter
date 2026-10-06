@@ -160,8 +160,5 @@ func main() {
 	loggr.Info("Starting Network filter")
 
 	n := newNetworkFilter()
-	err := n.startNetworkFilter()
-	if err != nil {
-		panic(err.Error())
-	}
+	panic(n.startNetworkFilter().Error())
 }

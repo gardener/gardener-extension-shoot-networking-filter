@@ -99,9 +99,12 @@ func createShoot(generateName string, blackholing bool, blockAddress string, use
 			},
 		},
 		Spec: gardencorev1beta1.ShootSpec{
-			Region:            "local",
-			SecretBindingName: new("local"),
-			CloudProfileName:  new("local"),
+			Region:                 "local",
+			CredentialsBindingName: new("local"),
+			CloudProfile: &gardencorev1beta1.CloudProfileReference{
+				Kind: "CloudProfile",
+				Name: "local",
+			},
 			Kubernetes: gardencorev1beta1.Kubernetes{
 				Version: "1.32.0",
 				Kubelet: &gardencorev1beta1.KubeletConfig{
