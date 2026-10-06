@@ -92,6 +92,7 @@ func (o *Options) run(ctx context.Context) error {
 	o.reconcileOptions.Completed().Apply(&lifecycle.DefaultAddOptions.IgnoreOperationAnnotation)
 	o.healthOptions.Completed().Apply(&healthcheck.DefaultAddOptions.Controller)
 	o.heartbeatOptions.Completed().Apply(&heartbeat.DefaultAddOptions)
+	lifecycle.DefaultAddOptions.ExtensionClasses = o.generalOptions.Completed().ExtensionClasses
 
 	if err := o.controllerSwitches.Completed().AddToManager(ctx, mgr); err != nil {
 		return fmt.Errorf("could not add controllers to manager: %s", err)
