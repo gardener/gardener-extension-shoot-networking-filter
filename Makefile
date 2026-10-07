@@ -125,7 +125,7 @@ verify-extended: check-generate check format test test-cov test-clean sast-repor
 
 .PHONY: test-e2e-local
 test-e2e-local: $(KIND) $(YQ) $(GINKGO)
-	@$(REPO_ROOT)/hack/test-e2e-provider-local.sh --procs=3
+	@$(REPO_ROOT)/hack/test-e2e-provider-local.sh
 
 .PHONY: extension-up
 extension-up: export EXTENSION_VERSION = $(VERSION)
