@@ -37,7 +37,7 @@ var _ = Describe("Network-Filter Tests", func() {
 		defer cancel()
 
 		By("Deploy Extension")
-		Expect(execMake(ctx, "extension-operator-up")).To(Succeed())
+		Expect(execMake(ctx, "extension-up")).To(Succeed())
 
 		By("Get Virtual Garden Client")
 		virtualClusterClient, err := kubernetes.NewClientFromSecret(ctx, runtimeClient, v1beta1constants.GardenNamespace, "gardener",

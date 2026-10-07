@@ -25,7 +25,7 @@ trap '{
   export_artifacts "gardener-local"
   make kind-down
 }' EXIT
-export KUBECONFIG=$repo_root/gardener/dev-setup/kubeconfigs/seed/kubeconfig
+export KUBECONFIG=$repo_root/gardener/dev-setup/kubeconfigs/runtime/kubeconfig
 echo ">>>>>>>>>>>>>>>>>>>> kind-up done"
 echo ">>>>>>>>>>>>>>>>>>>> gardener-up"
 make gardener-up
@@ -48,4 +48,7 @@ export GOMEGA_DEFAULT_CONSISTENTLY_DURATION=5s
 export GOMEGA_DEFAULT_CONSISTENTLY_POLLING_INTERVAL=200ms
 
 ginkgo --timeout=1h --v --show-node-events "$@" $repo_root/test/e2e/local/...
+
+export KUBECONFIG=$repo_root/gardener/dev-setup/kubeconfigs/runtime/kubeconfig
+ginkgo --timeout=1h --v --show-node-events "$repo_root/test/e2e/operator/..."
 
