@@ -70,8 +70,6 @@ build:
       requires:
         - image: local-skaffold/gardener-extension-shoot-networking-filter
           alias: IMG
-  insecureRegistries:
-    - registry.local.gardener.cloud:5001
 manifests:
   rawYaml:
     - local-setup/operator-extension-resource.yaml
