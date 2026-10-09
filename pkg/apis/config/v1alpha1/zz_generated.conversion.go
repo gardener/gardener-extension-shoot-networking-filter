@@ -14,7 +14,6 @@ import (
 
 	config "github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
 	configv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -142,9 +141,7 @@ func Convert_config_Configuration_To_v1alpha1_Configuration(in *config.Configura
 }
 
 func autoConvert_v1alpha1_DownloaderConfig_To_config_DownloaderConfig(in *DownloaderConfig, out *config.DownloaderConfig, s conversion.Scope) error {
-	out.Endpoint = in.Endpoint
-	out.OAuth2Endpoint = (*string)(unsafe.Pointer(in.OAuth2Endpoint))
-	out.RefreshPeriod = (*v1.Duration)(unsafe.Pointer(in.RefreshPeriod))
+	*out = *(*config.DownloaderConfig)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -154,9 +151,7 @@ func Convert_v1alpha1_DownloaderConfig_To_config_DownloaderConfig(in *Downloader
 }
 
 func autoConvert_config_DownloaderConfig_To_v1alpha1_DownloaderConfig(in *config.DownloaderConfig, out *DownloaderConfig, s conversion.Scope) error {
-	out.Endpoint = in.Endpoint
-	out.OAuth2Endpoint = (*string)(unsafe.Pointer(in.OAuth2Endpoint))
-	out.RefreshPeriod = (*v1.Duration)(unsafe.Pointer(in.RefreshPeriod))
+	*out = *(*DownloaderConfig)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -166,16 +161,7 @@ func Convert_config_DownloaderConfig_To_v1alpha1_DownloaderConfig(in *config.Dow
 }
 
 func autoConvert_v1alpha1_EgressFilter_To_config_EgressFilter(in *EgressFilter, out *config.EgressFilter, s conversion.Scope) error {
-	out.BlackholingEnabled = in.BlackholingEnabled
-	out.Workers = (*config.Workers)(unsafe.Pointer(in.Workers))
-	out.SleepDuration = (*v1.Duration)(unsafe.Pointer(in.SleepDuration))
-	out.FilterListProviderType = config.FilterListProviderType(in.FilterListProviderType)
-	out.StaticFilterList = *(*[]config.Filter)(unsafe.Pointer(&in.StaticFilterList))
-	out.DownloaderConfig = (*config.DownloaderConfig)(unsafe.Pointer(in.DownloaderConfig))
-	out.EnsureConnectivity = (*config.EnsureConnectivity)(unsafe.Pointer(in.EnsureConnectivity))
-	out.TagFilters = *(*[]config.TagFilter)(unsafe.Pointer(&in.TagFilters))
-	out.ProjectFilterListSource = (*config.SecretRef)(unsafe.Pointer(in.ProjectFilterListSource))
-	out.ShootFilterListSource = (*config.SecretRef)(unsafe.Pointer(in.ShootFilterListSource))
+	*out = *(*config.EgressFilter)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -185,16 +171,7 @@ func Convert_v1alpha1_EgressFilter_To_config_EgressFilter(in *EgressFilter, out 
 }
 
 func autoConvert_config_EgressFilter_To_v1alpha1_EgressFilter(in *config.EgressFilter, out *EgressFilter, s conversion.Scope) error {
-	out.BlackholingEnabled = in.BlackholingEnabled
-	out.Workers = (*Workers)(unsafe.Pointer(in.Workers))
-	out.SleepDuration = (*v1.Duration)(unsafe.Pointer(in.SleepDuration))
-	out.FilterListProviderType = FilterListProviderType(in.FilterListProviderType)
-	out.StaticFilterList = *(*[]Filter)(unsafe.Pointer(&in.StaticFilterList))
-	out.DownloaderConfig = (*DownloaderConfig)(unsafe.Pointer(in.DownloaderConfig))
-	out.EnsureConnectivity = (*EnsureConnectivity)(unsafe.Pointer(in.EnsureConnectivity))
-	out.TagFilters = *(*[]TagFilter)(unsafe.Pointer(&in.TagFilters))
-	out.ProjectFilterListSource = (*SecretRef)(unsafe.Pointer(in.ProjectFilterListSource))
-	out.ShootFilterListSource = (*SecretRef)(unsafe.Pointer(in.ShootFilterListSource))
+	*out = *(*EgressFilter)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -204,7 +181,7 @@ func Convert_config_EgressFilter_To_v1alpha1_EgressFilter(in *config.EgressFilte
 }
 
 func autoConvert_v1alpha1_EnsureConnectivity_To_config_EnsureConnectivity(in *EnsureConnectivity, out *config.EnsureConnectivity, s conversion.Scope) error {
-	out.SeedNamespaces = *(*[]string)(unsafe.Pointer(&in.SeedNamespaces))
+	*out = *(*config.EnsureConnectivity)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -214,7 +191,7 @@ func Convert_v1alpha1_EnsureConnectivity_To_config_EnsureConnectivity(in *Ensure
 }
 
 func autoConvert_config_EnsureConnectivity_To_v1alpha1_EnsureConnectivity(in *config.EnsureConnectivity, out *EnsureConnectivity, s conversion.Scope) error {
-	out.SeedNamespaces = *(*[]string)(unsafe.Pointer(&in.SeedNamespaces))
+	*out = *(*EnsureConnectivity)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -224,9 +201,7 @@ func Convert_config_EnsureConnectivity_To_v1alpha1_EnsureConnectivity(in *config
 }
 
 func autoConvert_v1alpha1_Filter_To_config_Filter(in *Filter, out *config.Filter, s conversion.Scope) error {
-	out.Network = in.Network
-	out.Policy = config.Policy(in.Policy)
-	out.Tags = *(*[]config.Tag)(unsafe.Pointer(&in.Tags))
+	*out = *(*config.Filter)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -236,9 +211,7 @@ func Convert_v1alpha1_Filter_To_config_Filter(in *Filter, out *config.Filter, s 
 }
 
 func autoConvert_config_Filter_To_v1alpha1_Filter(in *config.Filter, out *Filter, s conversion.Scope) error {
-	out.Network = in.Network
-	out.Policy = Policy(in.Policy)
-	out.Tags = *(*[]Tag)(unsafe.Pointer(&in.Tags))
+	*out = *(*Filter)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -248,9 +221,7 @@ func Convert_config_Filter_To_v1alpha1_Filter(in *config.Filter, out *Filter, s 
 }
 
 func autoConvert_v1alpha1_SecretRef_To_config_SecretRef(in *SecretRef, out *config.SecretRef, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Key = in.Key
-	out.Namespace = in.Namespace
+	*out = *(*config.SecretRef)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -260,9 +231,7 @@ func Convert_v1alpha1_SecretRef_To_config_SecretRef(in *SecretRef, out *config.S
 }
 
 func autoConvert_config_SecretRef_To_v1alpha1_SecretRef(in *config.SecretRef, out *SecretRef, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Key = in.Key
-	out.Namespace = in.Namespace
+	*out = *(*SecretRef)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -272,8 +241,7 @@ func Convert_config_SecretRef_To_v1alpha1_SecretRef(in *config.SecretRef, out *S
 }
 
 func autoConvert_v1alpha1_Tag_To_config_Tag(in *Tag, out *config.Tag, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Values = *(*[]string)(unsafe.Pointer(&in.Values))
+	*out = *(*config.Tag)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -283,8 +251,7 @@ func Convert_v1alpha1_Tag_To_config_Tag(in *Tag, out *config.Tag, s conversion.S
 }
 
 func autoConvert_config_Tag_To_v1alpha1_Tag(in *config.Tag, out *Tag, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Values = *(*[]string)(unsafe.Pointer(&in.Values))
+	*out = *(*Tag)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -294,9 +261,7 @@ func Convert_config_Tag_To_v1alpha1_Tag(in *config.Tag, out *Tag, s conversion.S
 }
 
 func autoConvert_v1alpha1_TagFilter_To_config_TagFilter(in *TagFilter, out *config.TagFilter, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Values = *(*[]string)(unsafe.Pointer(&in.Values))
-	out.Policy = (*config.Policy)(unsafe.Pointer(in.Policy))
+	*out = *(*config.TagFilter)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -306,9 +271,7 @@ func Convert_v1alpha1_TagFilter_To_config_TagFilter(in *TagFilter, out *config.T
 }
 
 func autoConvert_config_TagFilter_To_v1alpha1_TagFilter(in *config.TagFilter, out *TagFilter, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Values = *(*[]string)(unsafe.Pointer(&in.Values))
-	out.Policy = (*Policy)(unsafe.Pointer(in.Policy))
+	*out = *(*TagFilter)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -318,8 +281,7 @@ func Convert_config_TagFilter_To_v1alpha1_TagFilter(in *config.TagFilter, out *T
 }
 
 func autoConvert_v1alpha1_Workers_To_config_Workers(in *Workers, out *config.Workers, s conversion.Scope) error {
-	out.BlackholingEnabled = in.BlackholingEnabled
-	out.Names = *(*[]string)(unsafe.Pointer(&in.Names))
+	*out = *(*config.Workers)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -329,8 +291,7 @@ func Convert_v1alpha1_Workers_To_config_Workers(in *Workers, out *config.Workers
 }
 
 func autoConvert_config_Workers_To_v1alpha1_Workers(in *config.Workers, out *Workers, s conversion.Scope) error {
-	out.BlackholingEnabled = in.BlackholingEnabled
-	out.Names = *(*[]string)(unsafe.Pointer(&in.Names))
+	*out = *(*Workers)(unsafe.Pointer(in))
 	return nil
 }
 
