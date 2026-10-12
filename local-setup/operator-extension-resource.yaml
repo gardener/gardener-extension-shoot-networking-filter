@@ -10,6 +10,8 @@ spec:
       helm:
         ociRepository:
           ref: local-skaffold/gardener-extension-shoot-networking-filter/charts/extension
+          caBundleSecretRef:
+            name: gardener-local-registry-ca
       values:
         image:
           tag: v0.24.0-dev
@@ -39,10 +41,14 @@ spec:
         helm:
           ociRepository:
             ref: local-skaffold/gardener-extension-shoot-networking-filter-admission/charts/runtime
+            caBundleSecretRef:
+              name: gardener-local-registry-ca
       virtualCluster:
         helm:
           ociRepository:
             ref: local-skaffold/gardener-extension-shoot-networking-filter-admission/charts/application
+            caBundleSecretRef:
+              name: gardener-local-registry-ca
 
   resources:
   - kind: Extension
