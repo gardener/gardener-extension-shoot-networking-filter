@@ -458,9 +458,16 @@ func (a *actuator) parseSecretFilterList(secret *corev1.Secret, dataKey string, 
 	gr, err := gzip.NewReader(bytes.NewReader(data))
 	if err == nil {
 		defer gr.Close()
-		decompressed, err := io.ReadAll(gr)
+		// Bound decompressed output to prevent decompression bombs.
+		// LimitReader stops silently at n bytes without signalling overflow, so we
+		// request n+1 bytes and treat a full read as evidence the payload is too large.
+		lr := io.LimitReader(gr, constants.FilterListMaxDecompressedSize+1)
+		decompressed, err := io.ReadAll(lr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decompress gzip data: %w", err)
+		}
+		if int64(len(decompressed)) > constants.FilterListMaxDecompressedSize {
+			return nil, fmt.Errorf("decompressed %s exceeds maximum allowed size of %d bytes", logPrefix, constants.FilterListMaxDecompressedSize)
 		}
 		a.logger.Info("decompressed "+logPrefix, "compressed", len(data), "decompressed", len(decompressed))
 		data = decompressed
@@ -474,6 +481,16 @@ func (a *actuator) parseSecretFilterList(secret *corev1.Secret, dataKey string, 
 	filters, err := parseFilterList(data)
 	if err != nil {
 		return nil, err
+	}
+
+	// Apply the same entry-count and per-entry network bounds as the operator download path.
+	if len(filters) > constants.FilterListMaxEntries {
+		return nil, fmt.Errorf("%s too large: %d entries (max %d)", logPrefix, len(filters), constants.FilterListMaxEntries)
+	}
+	for i, f := range filters {
+		if _, _, err := net.ParseCIDR(f.Network); err != nil {
+			return nil, fmt.Errorf("%s entry %d: invalid network %q: %w", logPrefix, i, f.Network, err)
+		}
 	}
 
 	return filters, nil

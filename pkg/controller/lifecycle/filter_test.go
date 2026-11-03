@@ -5,11 +5,16 @@
 package lifecycle
 
 import (
+	"bytes"
+	"compress/gzip"
+	"fmt"
 	"net"
+	"strings"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
@@ -586,6 +591,82 @@ var _ = Describe("Filter methods", func() {
 					Expect(entry.Policy).To(Equal(config.PolicyAllowAccess))
 				}
 			}
+		})
+	})
+
+	Describe("#parseSecretFilterList", func() {
+		var a *actuator
+
+		BeforeEach(func() {
+			a = &actuator{logger: logr.Discard()}
+		})
+
+		makeSecret := func(key string, data []byte) *corev1.Secret {
+			return &corev1.Secret{Data: map[string][]byte{key: data}}
+		}
+
+		gzipCompress := func(data []byte) []byte {
+			var buf bytes.Buffer
+			gz := gzip.NewWriter(&buf)
+			_, err := gz.Write(data)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(gz.Close()).To(Succeed())
+			return buf.Bytes()
+		}
+
+		It("parses a plain JSON v1 filter list", func() {
+			raw := []byte(`[{"network":"203.0.113.0/24","policy":"BLOCK_ACCESS"}]`)
+			filters, err := a.parseSecretFilterList(makeSecret("filterList", raw), "filterList", "test")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filters).To(HaveLen(1))
+			Expect(filters[0].Network).To(Equal("203.0.113.0/24"))
+		})
+
+		It("parses a gzip-compressed JSON v1 filter list", func() {
+			raw := []byte(`[{"network":"203.0.113.0/24","policy":"BLOCK_ACCESS"}]`)
+			filters, err := a.parseSecretFilterList(makeSecret("filterList", gzipCompress(raw)), "filterList", "test")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filters).To(HaveLen(1))
+			Expect(filters[0].Network).To(Equal("203.0.113.0/24"))
+		})
+
+		It("returns error when the data key is not present in the Secret", func() {
+			raw := []byte(`[{"network":"203.0.113.0/24","policy":"BLOCK_ACCESS"}]`)
+			_, err := a.parseSecretFilterList(makeSecret("filterList", raw), "wrongKey", "test")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("wrongKey"))
+		})
+
+		It("rejects a gzip payload that expands beyond FilterListMaxDecompressedSize", func() {
+			// Null bytes compress to almost nothing, keeping the Secret small while
+			// the decompressed size exceeds the limit — the classic decompression bomb shape.
+			bomb := make([]byte, constants.FilterListMaxDecompressedSize+1)
+			_, err := a.parseSecretFilterList(makeSecret("filterList", gzipCompress(bomb)), "filterList", "test")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("exceeds maximum allowed size"))
+		})
+
+		It("rejects a filter list with more than FilterListMaxEntries entries", func() {
+			var sb strings.Builder
+			sb.WriteString("[")
+			for i := 0; i <= constants.FilterListMaxEntries; i++ {
+				if i > 0 {
+					sb.WriteString(",")
+				}
+				fmt.Fprintf(&sb, `{"network":"%d.%d.%d.0/24","policy":"BLOCK_ACCESS"}`,
+					i/65536, (i/256)%256, i%256)
+			}
+			sb.WriteString("]")
+			_, err := a.parseSecretFilterList(makeSecret("filterList", []byte(sb.String())), "filterList", "test")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("too large"))
+		})
+
+		It("rejects an entry with an invalid CIDR", func() {
+			raw := []byte(`[{"network":"not-a-cidr","policy":"BLOCK_ACCESS"}]`)
+			_, err := a.parseSecretFilterList(makeSecret("filterList", raw), "filterList", "test")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("invalid network"))
 		})
 	})
 
