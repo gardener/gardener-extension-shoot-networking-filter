@@ -41,6 +41,13 @@ const (
 	// FilterListMaxEntries is the maximum number of entries in the filter list
 	FilterListMaxEntries = 50000
 
+	// FilterListMaxDecompressedSize is the maximum allowed size of a decompressed filter list in bytes.
+	// This prevents decompression bombs: a 1 MiB gzip object can otherwise expand to several GiB.
+	// Worst-case v1 entry (max IPv6 CIDR + longest policy): ~81 bytes.
+	// 50 000 entries × 81 bytes + separators ≈ 4 MiB; doubling for v2 tag overhead gives ~8 MiB.
+	// 16 MiB is therefore a ~2× safety margin over the theoretical maximum.
+	FilterListMaxDecompressedSize = int64(16 * 1024 * 1024)
+
 	// KeyFilterList is the key in the filter list secret for the raw filter list
 	KeyFilterList = "filter-list"
 	// KeyIPV4List is the key in the filter list secret for the ipv4 policy list
