@@ -25,14 +25,6 @@ COPY charts /charts
 COPY --from=builder /go/bin/gardener-extension-shoot-networking-filter /gardener-extension-shoot-networking-filter
 ENTRYPOINT ["/gardener-extension-shoot-networking-filter"]
 
-############ gardener-runtime-networking-filter
-FROM  gcr.io/distroless/static-debian13:nonroot AS gardener-runtime-networking-filter
-WORKDIR /
-
-COPY --from=builder /go/bin/gardener-runtime-networking-filter /gardener-runtime-networking-filter
-ENTRYPOINT ["/gardener-runtime-networking-filter"]
-
-############ gardener-runtime-networking-filter
 FROM  gcr.io/distroless/static-debian13:nonroot AS gardener-extension-shoot-networking-filter-admission
 WORKDIR /
 
