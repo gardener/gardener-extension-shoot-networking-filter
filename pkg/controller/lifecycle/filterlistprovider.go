@@ -193,9 +193,13 @@ func (p *DownloaderFilterListProvider) download() ([]config.Filter, error) {
 	}
 	defer resp.Body.Close()
 
-	b, err := io.ReadAll(resp.Body)
+	lr := io.LimitReader(resp.Body, constants.FilterListMaxDecompressedSize+1)
+	b, err := io.ReadAll(lr)
 	if err != nil {
 		return nil, err
+	}
+	if int64(len(b)) > constants.FilterListMaxDecompressedSize {
+		return nil, fmt.Errorf("downloaded filter list exceeds maximum allowed size of %d bytes", constants.FilterListMaxDecompressedSize)
 	}
 
 	// Parse filter list using common parser

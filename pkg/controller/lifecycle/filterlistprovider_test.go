@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/apis/config"
+	"github.com/gardener/gardener-extension-shoot-networking-filter/pkg/constants"
 )
 
 var _ = Describe("DownloaderFilterListProvider", func() {
@@ -85,6 +86,20 @@ var _ = Describe("DownloaderFilterListProvider", func() {
 			fmt.Println(err)
 			Expect(err.Error()).To(ContainSubstring("unmarshalling body failed"))
 			Expect(err.Error()).To(ContainSubstring("no healthy upstream"))
+		})
+
+		It("should fail if response body exceeds maximum allowed size", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				oversized := make([]byte, constants.FilterListMaxDecompressedSize+1)
+				_, _ = w.Write(oversized)
+			}))
+			defer server.Close()
+			provider.downloaderConfig.Endpoint = server.URL
+
+			_, err := provider.download()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("exceeds maximum allowed size"))
 		})
 
 		It("should fail on invalid CIDR", func() {
