@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -58,6 +59,7 @@ func (p *basicFilterListProvider) ReadSecretData(ctx context.Context) (map[strin
 
 type StaticFilterListProvider struct {
 	basicFilterListProvider
+	mu         sync.RWMutex
 	filterList []config.Filter
 }
 
@@ -84,8 +86,18 @@ func (p *StaticFilterListProvider) Setup() error {
 	return nil
 }
 
+func (p *StaticFilterListProvider) SetFilterList(filterList []config.Filter) {
+	p.mu.Lock()
+	p.filterList = filterList
+	p.mu.Unlock()
+}
+
 func (p *StaticFilterListProvider) GetFilterList() []config.Filter {
-	return p.filterList
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	result := make([]config.Filter, len(p.filterList))
+	copy(result, p.filterList)
+	return result
 }
 
 type DownloaderFilterListProvider struct {
@@ -94,6 +106,7 @@ type DownloaderFilterListProvider struct {
 	oauth2Secret     *config.OAuth2Secret
 	ticker           *time.Ticker
 	tickerDone       chan bool
+	mu               sync.RWMutex
 	filterList       []config.Filter // Store the raw filter list in memory
 }
 
@@ -162,13 +175,19 @@ func (p *DownloaderFilterListProvider) downloadAndStore() error {
 		return err
 	}
 	p.logger.Info("download ok")
+	p.mu.Lock()
 	p.filterList = filterList
+	p.mu.Unlock()
 
 	return nil
 }
 
 func (p *DownloaderFilterListProvider) GetFilterList() []config.Filter {
-	return p.filterList
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	result := make([]config.Filter, len(p.filterList))
+	copy(result, p.filterList)
+	return result
 }
 
 func (p *DownloaderFilterListProvider) download() ([]config.Filter, error) {

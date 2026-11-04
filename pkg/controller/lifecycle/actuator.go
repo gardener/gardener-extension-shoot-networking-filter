@@ -167,7 +167,7 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 
 		staticProvider, ok := a.provider.(*StaticFilterListProvider)
 		if ok {
-			staticProvider.filterList = a.serviceConfig.EgressFilter.StaticFilterList
+			staticProvider.SetFilterList(a.serviceConfig.EgressFilter.StaticFilterList)
 			err := a.provider.Setup()
 			if err != nil {
 				return err
@@ -376,7 +376,7 @@ func (a *actuator) combineDownloadedAndStaticFilters(staticFilterList []config.F
 	if len(tagFilters) > 0 {
 		downloadedFilterList = filterByTags(downloadedFilterList, tagFilters, a.logger)
 	}
-	return append(downloadedFilterList, staticFilterList...)
+	return slices.Concat(downloadedFilterList, staticFilterList)
 }
 
 // readProjectFilterList reads filter list from a Secret synced to the shoot namespace.
