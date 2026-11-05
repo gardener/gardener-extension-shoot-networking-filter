@@ -47,20 +47,6 @@ jobs:
                   availability_requirement: low
               - name: imagevector.gardener.cloud/repository
                 value: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/shoot-networking-filter
-          - name: gardener-runtime-networking-filter
-            target: gardener-runtime-networking-filter
-            oci-repository: gardener/extensions/runtime-networking-filter
-            ocm-labels:
-              - name: gardener.cloud/cve-categorisation
-                value:
-                  network_exposure: protected
-                  authentication_enforced: false
-                  user_interaction: gardener-operator
-                  confidentiality_requirement: high
-                  integrity_requirement: high
-                  availability_requirement: low
-              - name: imagevector.gardener.cloud/repository
-                value: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/runtime-networking-filter
           - name: gardener-extension-shoot-networking-filter-admission
             target: gardener-extension-shoot-networking-filter-admission
             oci-repository: gardener/extensions/shoot-networking-filter-admission
@@ -120,15 +106,6 @@ jobs:
                 attribute: image.repository
               - ref: ocm-resource:gardener-extension-shoot-networking-filter-admission.tag
                 attribute: image.tag
-          - name: runtime-networking-filter
-            dir: charts/gardener-runtime-networking-filter
-            oci-repository: charts/gardener/extensions
-            ocm-mappings:
-              - ref: ocm-resource:gardener-runtime-networking-filter.repository
-                attribute: image.repository
-              - ref: ocm-resource:gardener-runtime-networking-filter.tag
-                attribute: image.tag
-
     with:
       name: ${{ matrix.args.name }}
       dir: ${{ matrix.args.dir }}
