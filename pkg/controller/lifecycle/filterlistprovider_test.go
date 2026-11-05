@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
@@ -237,6 +238,129 @@ var _ = Describe("DownloaderFilterListProvider", func() {
 			token, err := provider.getAccessToken("http://token", secret)
 			Expect(err).To(HaveOccurred())
 			Expect(token).To(BeEmpty())
+		})
+	})
+
+	Describe("#GetFilterList", func() {
+		It("should return an independent copy so mutations do not affect stored list", func() {
+			filters := []config.Filter{
+				{Network: "1.2.3.4/32", Policy: config.PolicyBlockAccess},
+			}
+			b, _ := json.Marshal(filters)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write(b)
+			}))
+			defer server.Close()
+			provider.downloaderConfig.Endpoint = server.URL
+
+			Expect(provider.downloadAndStore()).To(Succeed())
+
+			got := provider.GetFilterList()
+			Expect(got).To(HaveLen(1))
+
+			// mutate the returned slice
+			got[0].Policy = config.PolicyAllowAccess
+
+			// stored list must be unaffected
+			got2 := provider.GetFilterList()
+			Expect(got2[0].Policy).To(Equal(config.PolicyBlockAccess))
+		})
+
+		It("should not race on concurrent reads and writes", func() {
+			filters := []config.Filter{
+				{Network: "10.0.0.0/8", Policy: config.PolicyBlockAccess},
+			}
+			b, _ := json.Marshal(filters)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write(b)
+			}))
+			defer server.Close()
+			provider.downloaderConfig.Endpoint = server.URL
+			Expect(provider.downloadAndStore()).To(Succeed())
+
+			const goroutines = 5
+			const iterations = 50
+			var wg sync.WaitGroup
+			wg.Add(goroutines * 2)
+
+			for range goroutines {
+				go func() {
+					defer wg.Done()
+					for range iterations {
+						_ = provider.GetFilterList()
+					}
+				}()
+				go func() {
+					defer wg.Done()
+					for range iterations {
+						_ = provider.downloadAndStore()
+					}
+				}()
+			}
+			wg.Wait()
+		})
+	})
+})
+
+var _ = Describe("StaticFilterListProvider", func() {
+	var (
+		ctx        context.Context
+		logger     logr.Logger
+		fakeClient client.Client
+	)
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		logger = logr.Discard()
+		fakeClient = fake.NewClientBuilder().WithScheme(runtime.NewScheme()).Build()
+	})
+
+	Describe("#GetFilterList", func() {
+		It("should return an independent copy so mutations do not affect stored list", func() {
+			filters := []config.Filter{
+				{Network: "1.2.3.4/32", Policy: config.PolicyBlockAccess},
+			}
+			provider := NewStaticFilterListProvider(ctx, fakeClient, logger, filters)
+
+			got := provider.GetFilterList()
+			Expect(got).To(HaveLen(1))
+
+			got[0].Policy = config.PolicyAllowAccess
+
+			got2 := provider.GetFilterList()
+			Expect(got2[0].Policy).To(Equal(config.PolicyBlockAccess))
+		})
+
+		It("should not race on concurrent SetFilterList and GetFilterList", func() {
+			filters := []config.Filter{
+				{Network: "10.0.0.0/8", Policy: config.PolicyBlockAccess},
+			}
+			provider := NewStaticFilterListProvider(ctx, fakeClient, logger, filters)
+
+			const goroutines = 5
+			const iterations = 50
+			var wg sync.WaitGroup
+			wg.Add(goroutines * 2)
+
+			for range goroutines {
+				go func() {
+					defer wg.Done()
+					for range iterations {
+						_ = provider.GetFilterList()
+					}
+				}()
+				go func() {
+					defer wg.Done()
+					for range iterations {
+						provider.SetFilterList([]config.Filter{
+							{Network: "192.168.0.0/16", Policy: config.PolicyAllowAccess},
+						})
+					}
+				}()
+			}
+			wg.Wait()
 		})
 	})
 })
