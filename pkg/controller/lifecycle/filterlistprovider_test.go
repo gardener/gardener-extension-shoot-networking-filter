@@ -306,8 +306,8 @@ var _ = Describe("DownloaderFilterListProvider", func() {
 
 var _ = Describe("StaticFilterListProvider", func() {
 	var (
-		ctx      context.Context
-		logger   logr.Logger
+		ctx        context.Context
+		logger     logr.Logger
 		fakeClient client.Client
 	)
 
