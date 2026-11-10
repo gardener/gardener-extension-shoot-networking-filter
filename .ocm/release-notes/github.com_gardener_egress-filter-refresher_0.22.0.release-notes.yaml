@@ -1,3 +1,4 @@
+reference_version: v0.31.0
 ocm:
   component_name: github.com/gardener/egress-filter-refresher
   component_version: 0.22.0
