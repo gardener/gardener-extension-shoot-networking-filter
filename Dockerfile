@@ -18,14 +18,14 @@ ARG EFFECTIVE_VERSION
 RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION
 
 ############# gardener-extension-shoot-networking-filter
-FROM  gcr.io/distroless/static-debian13:nonroot@sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931 AS gardener-extension-shoot-networking-filter
+FROM  gcr.io/distroless/static-debian13:nonroot@sha256:8ce6dd87e9823c5b48dcfb2c8604714ccb351ce59607327bcc4957448da279b5 AS gardener-extension-shoot-networking-filter
 WORKDIR /
 
 COPY charts /charts
 COPY --from=builder /go/bin/gardener-extension-shoot-networking-filter /gardener-extension-shoot-networking-filter
 ENTRYPOINT ["/gardener-extension-shoot-networking-filter"]
 
-FROM  gcr.io/distroless/static-debian13:nonroot@sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931 AS gardener-extension-shoot-networking-filter-admission
+FROM  gcr.io/distroless/static-debian13:nonroot@sha256:8ce6dd87e9823c5b48dcfb2c8604714ccb351ce59607327bcc4957448da279b5 AS gardener-extension-shoot-networking-filter-admission
 WORKDIR /
 
 COPY --from=builder /go/bin/gardener-extension-shoot-networking-filter-admission /gardener-extension-shoot-networking-filter-admission
